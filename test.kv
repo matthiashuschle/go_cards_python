@@ -1,0 +1,34 @@
+<RV>:
+    viewclass: 'Label'
+    RecycleBoxLayout:
+        default_size: None, dp(56)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+
+
+
+<NavbarButton>:
+    background_normal: ''
+    background_color: 0.145, 0.431, 0.369, 1.
+
+
+<MainScreen>:
+    content_frame: content_frame
+    navbar: navbar
+
+    BoxLayout:
+        orientation: 'vertical'
+
+        BoxLayout:
+            id: navbar
+            orientation: 'horizontal'
+            spacing: 1
+            padding: 1
+            size_hint_y: 1
+
+        BoxLayout:
+            id: content_frame
+            orientation: 'vertical'
+            size_hint_y: 10
