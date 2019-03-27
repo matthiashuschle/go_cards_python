@@ -1,8 +1,11 @@
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import BooleanProperty, ListProperty, ObjectProperty, NumericProperty, DictProperty
 from kivy.lang import Builder
-from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.properties import StringProperty, OptionProperty, \
+    NumericProperty, BooleanProperty, ReferenceListProperty, \
+    ListProperty, ObjectProperty, DictProperty
+from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
+from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.button import Button
 from kivy.uix.recyclegridlayout import RecycleGridLayout
@@ -35,14 +38,26 @@ STORAGE = storage.Storage()
 # you can control the ScreenManager from kv. Each screen has by default a
 # property manager that gives you the instance of the ScreenManager used.
 Builder.load_string("""
-<RV@RecycleView>:
-    viewclass: 'Label'
-    RecycleBoxLayout:
+
+<SelectableLabel>:
+    # Draw a background to indicate selection
+    canvas.before:
+        Color:
+            rgba: (0.29, 0.569, 0.188, 1) if self.selected else (0, 0, 0, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<RV>:
+    viewclass: 'SelectableLabel'
+    SelectableRecycleBoxLayout:
         default_size: None, dp(56)
         default_size_hint: 1, None
         size_hint_y: None
         height: self.minimum_height
         orientation: 'vertical'
+        multiselect: True
+        touch_multiselect: True
         
         
 <NavbarButton@Button>:
@@ -88,11 +103,65 @@ Builder.load_string("""
 """)
 
 
+class SelectableRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior,
+                                 RecycleBoxLayout):
+    """ Adds selection and focus behaviour to the view. """
+
+
+class SelectableLabel(RecycleDataViewBehavior, Label):
+    """ Add selection support to the Label """
+    index = None
+    selected = BooleanProperty(False)
+    selectable = BooleanProperty(True)
+
+    def refresh_view_attrs(self, rv, index, data):
+        """ Catch and handle the view changes """
+        self.index = index
+        return super(SelectableLabel, self).refresh_view_attrs(
+            rv, index, data)
+
+    def on_touch_down(self, touch):
+        """ Add selection on touch down """
+        if super(SelectableLabel, self).on_touch_down(touch):
+            return True
+        if self.collide_point(*touch.pos) and self.selectable:
+            return self.parent.select_with_touch(self.index, touch)
+
+    def apply_selection(self, rv, index, is_selected):
+        """ Respond to the selection of items in the view. """
+        self.selected = is_selected
+        print(STORAGE.card_sets[index].name)
+        if is_selected:
+            print("selection changed to {0}".format(rv.data[index]))
+        else:
+            print("selection removed for {0}".format(rv.data[index]))
+
+
+# class CardSetRow(BoxLayout):
+#
+#     card_name = StringProperty(None)
+#     n_cards = NumericProperty(None)
+#
+#     def __init__(self, **kwargs):
+#         super().__init__(**kwargs)
+#         self.orientation = 'horizontal'
+#         self.btn = Button()
+#         self.btn.background_normal = ''
+#         self.btn.background_color = (.0, .0, .0, 1.)
+#         self.btn.font_size = 14
+#         Logger.info('FOO %s %i' % (self.card_name, self.n_cards))
+#         self.btn.text = 'FOO %s %i' % (self.card_name, self.n_cards)
+#         self.add_widget(self.btn)
+
+
 class RV(RecycleView):
     def __init__(self, **kwargs):
         super(RV, self).__init__(**kwargs)
         Logger.info('in RV')
-        self.data = [{'text': x.name} for x in STORAGE.card_sets]
+        self.data = [{
+            'text': '%s -- %i cards' % (x.name, x.card_count),
+            'select': True
+        } for x in STORAGE.card_sets]
 
 
 class Table(BoxLayout):
@@ -122,12 +191,12 @@ class LearnScreen(Screen):
 
 # Create the screen manager
 sm = ScreenManager()
+sm.transition = SlideTransition(duration=.2)
 sm.add_widget(ManageScreen(name='manage'))
 sm.add_widget(LearnScreen(name='learn'))
 
 
 class GoCardsApp(App):
-    storage = None
 
     def build(self):
         return sm
