@@ -1,4 +1,5 @@
 # define database models
+from datetime import datetime
 import peewee as pw
 
 database = pw.SqliteDatabase("gocards.db")
@@ -27,6 +28,6 @@ class Card(BaseModel):
     right = pw.CharField(default='')
     info_left = pw.CharField(default='')
     info_right = pw.CharField(default='')
-    last_seen = pw.DateTimeField(null=True)
+    last_seen = pw.DateTimeField(default=datetime.min)
     streak = pw.IntegerField(default=0)
-    hidden_until = pw.DateTimeField(null=True)
+    hidden_until = pw.DateTimeField(default=datetime.min)
