@@ -34,3 +34,16 @@ class Storage:
         ]
         self.cards = [x for x in Card.select(Card)]
         Logger.info('Loaded %i card sets' % len(self.card_sets))
+
+    def set_sets_active(self, active_sets):
+        for card_set in self.card_sets:
+            if (card_set.name in active_sets) != card_set.active:
+                card_set.active = card_set.name in active_sets
+                card_set.save()
+
+    def add_new_set(self, name, description, left_info, right_info):
+        with database:
+            new_set = CardSet(name=name, description=description,
+                              left_info=left_info, right_info=right_info)
+            new_set.save()
+            self.refresh_data()

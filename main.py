@@ -4,6 +4,7 @@ from kivy.lang import Builder
 from kivy.properties import StringProperty, OptionProperty, \
     NumericProperty, BooleanProperty, ReferenceListProperty, \
     ListProperty, ObjectProperty, DictProperty
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
@@ -47,10 +48,28 @@ Builder.load_string("""
         Rectangle:
             pos: self.pos
             size: self.size
+    label1_text: 'label 1 text'
+    label2_text: 'label 2 text'
+    pos: self.pos
+    size: self.size
+    Label:
+        id: id_label1
+        text: root.label1_text
+    Label:
+        id: id_label2
+        text: root.label2_text
+    BoxLayout:
+        padding: 10
+        Button:
+            text: 'View'
+            background_color: 0.145, 0.431, 0.369, 1.
+            font_size: 14
+            on_press: root.view_set()
 
 <RV>:
     viewclass: 'SelectableLabel'
     SelectableRecycleBoxLayout:
+        id: rv_layout
         default_size: None, dp(56)
         default_size_hint: 1, None
         size_hint_y: None
@@ -65,6 +84,52 @@ Builder.load_string("""
     background_color: 0.145, 0.431, 0.369, 1.
     font_size: 14
         
+<PopupLabelCell>
+    size_hint: (None, None)
+    height: 30
+    text_size: self.size
+    halign: "left"
+    valign: "middle"
+
+<EditStatePopup>:
+    container: container
+    size_hint: None, None
+    size: 450, 500
+    title_size: 20
+    auto_dismiss: False
+
+    BoxLayout:
+        orientation: "vertical"
+
+        GridLayout:
+            id: container
+            cols: 2
+            row_default_height: 30
+            cols_minimum: {0: 50, 1: 300}
+            # spacing: 10, 10
+            # padding: 20, 20
+            size_hint: (None, None)
+            height: self.minimum_height
+            
+        Label:
+            id: alert
+            color: 1, 0, 0, 1
+            text: ''
+
+        BoxLayout:
+            size_hint_y: .8
+            spacing: 1
+            padding: 1
+            NavbarButton:
+                size_hint: 1, 0.2
+                text: "Save"
+                on_release:
+                    root.save()
+            NavbarButton:
+                size_hint: 1, 0.2
+                text: "Cancel"
+                on_release: 
+                    root.dismiss()
 
 <ManageScreen>:
     BoxLayout:
@@ -79,14 +144,28 @@ Builder.load_string("""
                 text: 'Import'
             NavbarButton:
                 text: 'NewSet'
+                on_press: root.create_new_card_set()
             NavbarButton:
                 text: 'Learn'
-                on_press: root.manager.current = 'learn'
+                on_press: root.open_learn()
 
         BoxLayout:
             id: set_table
             orientation: 'vertical'
             size_hint_y: 10
+            
+<CardSetScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+
+        BoxLayout:
+            orientation: 'horizontal'
+            spacing: 1
+            padding: 1
+            size_hint_y: 1
+            NavbarButton:
+                text: 'Back'
+                on_press: root.manager.current = 'manage'
 
 <LearnScreen>:
     BoxLayout:
@@ -103,20 +182,66 @@ Builder.load_string("""
 """)
 
 
+class PopupLabelCell(Label):
+    pass
+
+
+class EditStatePopup(Popup):
+
+    def __init__(self, **kwargs):
+        super(EditStatePopup, self).__init__(**kwargs)
+        self.title = 'Foo'
+        self.populate_content()
+
+    def populate_content(self):
+        for field in ['*name', 'description', 'left info', 'right info']:
+            self.container.add_widget(PopupLabelCell(text=field))
+            textinput = TextInput(text='')
+            self.container.add_widget(textinput)
+
+    def save(self):
+        # children are reversed
+        content = list(reversed([
+            thing.text.strip() for i, thing in enumerate(self.container.children)
+            if i % 2 == 0
+        ]))
+        for thing in self.container.children:
+            print(thing)
+            try:
+                print(thing.text)
+            except AttributeError:
+                pass
+        existing_names = set(x.name for x in STORAGE.card_sets)
+        if not len(content[0]):
+            self.ids['alert'].text = 'no name given!'
+            return
+        if len(content[0]) and content[0] in existing_names:
+            self.ids['alert'].text = 'name already exists!'
+            return
+        STORAGE.add_new_set(*content)
+        Table.rv.reset_data()
+        self.dismiss()
+
+
 class SelectableRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior,
                                  RecycleBoxLayout):
     """ Adds selection and focus behaviour to the view. """
 
 
-class SelectableLabel(RecycleDataViewBehavior, Label):
+class SelectableLabel(RecycleDataViewBehavior, GridLayout):
     """ Add selection support to the Label """
     index = None
     selected = BooleanProperty(False)
     selectable = BooleanProperty(True)
+    cols = 3
 
     def refresh_view_attrs(self, rv, index, data):
         """ Catch and handle the view changes """
         self.index = index
+        self.label1_text = data['set_name']
+        self.label2_text = str(data['card_count'])
+        # self.ids['id_label3'].text = str(data['active'])
+        self.selected = data['active']
         return super(SelectableLabel, self).refresh_view_attrs(
             rv, index, data)
 
@@ -130,38 +255,38 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
     def apply_selection(self, rv, index, is_selected):
         """ Respond to the selection of items in the view. """
         self.selected = is_selected
-        print(STORAGE.card_sets[index].name)
-        if is_selected:
-            print("selection changed to {0}".format(rv.data[index]))
-        else:
-            print("selection removed for {0}".format(rv.data[index]))
+        # print(STORAGE.card_sets[index].name)
+        # if is_selected:
+        #     print("selection changed to {0}".format(rv.data[index]))
+        # else:
+        #     print("selection removed for {0}".format(rv.data[index]))
 
-
-# class CardSetRow(BoxLayout):
-#
-#     card_name = StringProperty(None)
-#     n_cards = NumericProperty(None)
-#
-#     def __init__(self, **kwargs):
-#         super().__init__(**kwargs)
-#         self.orientation = 'horizontal'
-#         self.btn = Button()
-#         self.btn.background_normal = ''
-#         self.btn.background_color = (.0, .0, .0, 1.)
-#         self.btn.font_size = 14
-#         Logger.info('FOO %s %i' % (self.card_name, self.n_cards))
-#         self.btn.text = 'FOO %s %i' % (self.card_name, self.n_cards)
-#         self.add_widget(self.btn)
+    def view_set(self):
+        # setup car set view screen
+        CardSetScreen.current_set_name = Table.rv.data[self.index]['set_name']
+        # switch to card set view
+        sm.current = 'cardset'
 
 
 class RV(RecycleView):
+
     def __init__(self, **kwargs):
         super(RV, self).__init__(**kwargs)
         Logger.info('in RV')
+        self.reset_data()
+
+    def reset_data(self):
         self.data = [{
-            'text': '%s -- %i cards' % (x.name, x.card_count),
-            'select': True
+            'set_name': x.name,
+            'card_count': x.card_count,
+            'active': x.active
         } for x in STORAGE.card_sets]
+        SelectableRecycleBoxLayout.selected_nodes = [
+            i for i, card_set in enumerate(STORAGE.card_sets) if card_set.active]
+
+    def get_selected(self):
+        return [Table.rv.data[ix]['set_name'] for node, ix in
+                self.ids['rv_layout'].view_indices.items() if node.selected]
 
 
 class Table(BoxLayout):
@@ -178,15 +303,54 @@ class Table(BoxLayout):
 # Declare both screens
 class ManageScreen(Screen):
 
-    def __init__(self, *args, **kwargs):
-        super(ManageScreen, self).__init__(*args, **kwargs)
-        Logger.info('in ManageScreens')
+    def __init__(self, **kwargs):
+        super(ManageScreen, self).__init__(**kwargs)
+        Logger.info('in ManageScreen')
         self.table = Table()
         self.ids.set_table.add_widget(self.table)
 
+    def open_learn(self):
+        LearnScreen.selected_sets = Table.rv.get_selected()
+        sm.current = 'learn'
+
+    def create_new_card_set(self):
+        EditStatePopup().open()
+
+
+class CardSetScreen(Screen):
+
+    current_set_name = None
+    set_data = None
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        Logger.info('in CardSetScreen')
+
+    def on_pre_enter(self, *args):
+        if self.current_set_name is None:
+            return
+        set_data = [x for x in STORAGE.card_sets if x.name == self.current_set_name]
+        if not len(set_data):
+            set_data = None
+        else:
+            set_data = set_data[0]
+        CardSetScreen.set_data = set_data
+
 
 class LearnScreen(Screen):
-    pass
+
+    selected_sets = []
+    card_data = []
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        Logger.info('in LearnScreen')
+
+    def on_pre_enter(self, *args):
+        print(self.selected_sets)
+        STORAGE.set_sets_active(self.selected_sets)
+        LearnScreen.card_data = [
+            x for x in STORAGE.cards if x.card_set.name in self.selected_sets]
 
 
 # Create the screen manager
@@ -194,6 +358,7 @@ sm = ScreenManager()
 sm.transition = SlideTransition(duration=.2)
 sm.add_widget(ManageScreen(name='manage'))
 sm.add_widget(LearnScreen(name='learn'))
+sm.add_widget(CardSetScreen(name='cardset'))
 
 
 class GoCardsApp(App):
