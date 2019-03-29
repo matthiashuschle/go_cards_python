@@ -1,6 +1,9 @@
 import peewee
+from contextlib import contextmanager
 from kivy.logger import Logger
 from models import CardSet, Card, database
+import threading
+from queue import Queue, Empty
 
 
 class Storage:
@@ -8,9 +11,30 @@ class Storage:
     def __init__(self):
         self.card_sets = None
         self.cards = None
-        with database:
+        self.db_lock = threading.Lock()
+        with self.db_lock:
             self.create_tables()
             self.refresh_data()
+        self.update_card_queue = Queue()
+        self.update_thread = threading.Thread(target=self.update_card_loop, daemon=True)
+        self.update_thread.start()
+
+    @contextmanager
+    def db_access(self):
+        with self.db_lock:
+            with database:
+                yield
+
+    def update_card_loop(self):
+        while True:
+            card_id = self.update_card_queue.get()
+            if card_id is not None:
+                card = [x for x in self.cards if x.card_id == card_id]
+                if len(card) != 1:
+                    continue
+                card = card[0]
+                with self.db_lock:
+                    card.save()
 
     @staticmethod
     def create_tables():
@@ -43,7 +67,7 @@ class Storage:
                 card_set.save()
 
     def add_new_set(self, name, description, left_info, right_info):
-        with database:
+        with self.db_lock:
             new_set = CardSet(name=name, description=description,
                               left_info=left_info, right_info=right_info)
             new_set.save()

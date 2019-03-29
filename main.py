@@ -22,6 +22,7 @@ from kivy.uix.recycleview import RecycleView
 from kivy.logger import Logger
 import sqlite3 as lite
 import re
+import datetime
 
 import storage
 from recycleview_manage import *
@@ -190,6 +191,7 @@ class LearnScreen(Screen):
         Logger.info('in LearnScreen')
 
     def on_pre_enter(self, *args):
+        # ToDo: reset after changing selected Sets
         self.storage.set_sets_active(self.selected_sets)
         card_data = [
             x for x in self.storage.cards if x.card_set.name in self.selected_sets]
@@ -232,19 +234,47 @@ class LearnScreen(Screen):
             return self.card_data[1]
 
     def reveal(self):
-        if self.current_card is not None:
-            self.ids['answer'].text = self.current_card.right
+        if self.current_card is None:
+            sm.current = 'manage'
+            return
+        self.ids['answer'].text = self.current_card.right
 
     def wrong_answer(self):
-        pass
+        if self.current_card is None:
+            sm.current = 'manage'
+            return
+        self.current_card.streak = 0
+        self.storage.update_card_queue.put(self.current_card.card_id)
+        self.card_data.insert(min(6, len(self.card_data)), self.current_card)
+        self.card_data = self.card_data[min(len(self.card_data), 1):]
+        self.update_questions()
 
     def right_answer(self):
-        pass
+        if self.current_card is None:
+            sm.current = 'manage'
+            return
+        self.current_card.streak += 1
+        self.current_card.last_seen = datetime.datetime.utcnow()
+        self.current_card.hidden_until = datetime.datetime.utcnow() + \
+            datetime.timedelta(hours=(12 * 2 ** (self.current_card.streak - 1) - 2))
+        self.storage.update_card_queue.put(self.current_card.card_id)
+        self.card_data = self.card_data[min(len(self.card_data), 1):]
+        self.update_questions()
 
     def delay_current(self):
-        pass
+        if self.current_card is None:
+            sm.current = 'manage'
+            return
+        self.current_card.hidden_until = datetime.datetime.utcnow() + \
+            datetime.timedelta(hours=10)
+        self.storage.update_card_queue.put(self.current_card.card_id)
+        self.card_data = self.card_data[min(len(self.card_data), 1):]
+        self.update_questions()
 
     def edit_current(self):
+        if self.current_card is None:
+            sm.current = 'manage'
+            return
         pass
 
 
