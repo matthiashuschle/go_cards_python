@@ -22,7 +22,8 @@ class Storage:
             test_set.save()
             test_card = Card(card_set=test_set, left='hallo', right='hello', left_info='DE', right_info='EN')
             test_card.save()
-            Card.insert(test_card)
+            test_card = Card(card_set=test_set, left='hallo 2', right='hello 2', left_info='DE', right_info='EN')
+            test_card.save()
 
     def refresh_data(self):
         self.card_sets = [

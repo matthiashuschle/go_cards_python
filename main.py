@@ -24,6 +24,7 @@ import sqlite3 as lite
 import re
 
 import storage
+from recycleview_manage import *
 
 Window.size = (480, 768)
 
@@ -38,99 +39,10 @@ STORAGE = storage.Storage()
 # Create both screens. Please note the root.manager.current: this is how
 # you can control the ScreenManager from kv. Each screen has by default a
 # property manager that gives you the instance of the ScreenManager used.
+Builder.load_file('general.kv')
+Builder.load_file('new_set.kv')
+Builder.load_file('recycleview_manage.kv')
 Builder.load_string("""
-
-<SelectableLabel>:
-    # Draw a background to indicate selection
-    canvas.before:
-        Color:
-            rgba: (0.29, 0.569, 0.188, 1) if self.selected else (0, 0, 0, 1)
-        Rectangle:
-            pos: self.pos
-            size: self.size
-    label1_text: 'label 1 text'
-    label2_text: 'label 2 text'
-    pos: self.pos
-    size: self.size
-    Label:
-        id: id_label1
-        text: root.label1_text
-    Label:
-        id: id_label2
-        text: root.label2_text
-    BoxLayout:
-        padding: 10
-        Button:
-            text: 'View'
-            background_color: 0.145, 0.431, 0.369, 1.
-            font_size: 14
-            on_press: root.view_set()
-
-<RV>:
-    viewclass: 'SelectableLabel'
-    SelectableRecycleBoxLayout:
-        id: rv_layout
-        default_size: None, dp(56)
-        default_size_hint: 1, None
-        size_hint_y: None
-        height: self.minimum_height
-        orientation: 'vertical'
-        multiselect: True
-        touch_multiselect: True
-        
-        
-<NavbarButton@Button>:
-    background_normal: ''
-    background_color: 0.145, 0.431, 0.369, 1.
-    font_size: 14
-        
-<PopupLabelCell>
-    size_hint: (None, None)
-    height: 30
-    text_size: self.size
-    halign: "left"
-    valign: "middle"
-
-<EditStatePopup>:
-    container: container
-    size_hint: None, None
-    size: 450, 500
-    title_size: 20
-    auto_dismiss: False
-
-    BoxLayout:
-        orientation: "vertical"
-
-        GridLayout:
-            id: container
-            cols: 2
-            row_default_height: 30
-            cols_minimum: {0: 50, 1: 300}
-            # spacing: 10, 10
-            # padding: 20, 20
-            size_hint: (None, None)
-            height: self.minimum_height
-            
-        Label:
-            id: alert
-            color: 1, 0, 0, 1
-            text: ''
-
-        BoxLayout:
-            size_hint_y: .8
-            spacing: 1
-            padding: 1
-            NavbarButton:
-                size_hint: 1, 0.2
-                text: "Save"
-                on_release:
-                    root.save()
-            NavbarButton:
-                size_hint: 1, 0.2
-                text: "Cancel"
-                on_release: 
-                    root.dismiss()
-
 <ManageScreen>:
     BoxLayout:
         orientation: 'vertical'
@@ -152,7 +64,7 @@ Builder.load_string("""
         BoxLayout:
             id: set_table
             orientation: 'vertical'
-            size_hint_y: 10
+            size_hint_y: 11
             
 <CardSetScreen>:
     BoxLayout:
@@ -168,10 +80,12 @@ Builder.load_string("""
                 on_press: root.manager.current = 'manage'
 
 <LearnScreen>:
+
     BoxLayout:
         orientation: 'vertical'
 
         BoxLayout:
+            id: navbar
             orientation: 'horizontal'
             spacing: 1
             padding: 1
@@ -179,142 +93,69 @@ Builder.load_string("""
             NavbarButton:
                 text: 'Back'
                 on_press: root.manager.current = 'manage'
+            NavbarButton:
+                text: 'Delay 10hrs'
+                on_press: root.delay_current()
+            NavbarButton:
+                text: 'Edit'
+                on_press: root.edit_current()
+
+        BoxLayout:
+            id: questions
+            orientation: 'vertical'
+            size_hint_y: 8
+            HiddenButton:
+                id: q_next
+                text: 'foo'
+                color: .6, .6, .6, 1.
+                font_size: 14
+                on_press: root.reveal()
+            HiddenButton:
+                id: q_this
+                text: 'bar'
+                font_size: 20
+                on_press: root.reveal()
+            HiddenButton:
+                id: answer
+                text: 'hidden answer'
+                font_size: 20
+                on_press: root.reveal()
+                
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_y: 3
+            BoxLayout:
+                orientation: 'horizontal'
+                spacing: 1
+                padding: 1
+                NavbarButton:
+                    background_color: 0.173, 0.278, 0.439, 1.
+                    text: 'wrong'
+                    on_press: root.wrong_answer()
+                NavbarButton:
+                    background_color: 0.29, 0.569, 0.188, 1.
+                    text: 'correct'
+                    on_press: root.right_answer()
 """)
-
-
-class PopupLabelCell(Label):
-    pass
-
-
-class EditStatePopup(Popup):
-
-    def __init__(self, **kwargs):
-        super(EditStatePopup, self).__init__(**kwargs)
-        self.title = 'Foo'
-        self.populate_content()
-
-    def populate_content(self):
-        for field in ['*name', 'description', 'left info', 'right info']:
-            self.container.add_widget(PopupLabelCell(text=field))
-            textinput = TextInput(text='')
-            self.container.add_widget(textinput)
-
-    def save(self):
-        # children are reversed
-        content = list(reversed([
-            thing.text.strip() for i, thing in enumerate(self.container.children)
-            if i % 2 == 0
-        ]))
-        for thing in self.container.children:
-            print(thing)
-            try:
-                print(thing.text)
-            except AttributeError:
-                pass
-        existing_names = set(x.name for x in STORAGE.card_sets)
-        if not len(content[0]):
-            self.ids['alert'].text = 'no name given!'
-            return
-        if len(content[0]) and content[0] in existing_names:
-            self.ids['alert'].text = 'name already exists!'
-            return
-        STORAGE.add_new_set(*content)
-        Table.rv.reset_data()
-        self.dismiss()
-
-
-class SelectableRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior,
-                                 RecycleBoxLayout):
-    """ Adds selection and focus behaviour to the view. """
-
-
-class SelectableLabel(RecycleDataViewBehavior, GridLayout):
-    """ Add selection support to the Label """
-    index = None
-    selected = BooleanProperty(False)
-    selectable = BooleanProperty(True)
-    cols = 3
-
-    def refresh_view_attrs(self, rv, index, data):
-        """ Catch and handle the view changes """
-        self.index = index
-        self.label1_text = data['set_name']
-        self.label2_text = str(data['card_count'])
-        # self.ids['id_label3'].text = str(data['active'])
-        self.selected = data['active']
-        return super(SelectableLabel, self).refresh_view_attrs(
-            rv, index, data)
-
-    def on_touch_down(self, touch):
-        """ Add selection on touch down """
-        if super(SelectableLabel, self).on_touch_down(touch):
-            return True
-        if self.collide_point(*touch.pos) and self.selectable:
-            return self.parent.select_with_touch(self.index, touch)
-
-    def apply_selection(self, rv, index, is_selected):
-        """ Respond to the selection of items in the view. """
-        self.selected = is_selected
-        # print(STORAGE.card_sets[index].name)
-        # if is_selected:
-        #     print("selection changed to {0}".format(rv.data[index]))
-        # else:
-        #     print("selection removed for {0}".format(rv.data[index]))
-
-    def view_set(self):
-        # setup car set view screen
-        CardSetScreen.current_set_name = Table.rv.data[self.index]['set_name']
-        # switch to card set view
-        sm.current = 'cardset'
-
-
-class RV(RecycleView):
-
-    def __init__(self, **kwargs):
-        super(RV, self).__init__(**kwargs)
-        Logger.info('in RV')
-        self.reset_data()
-
-    def reset_data(self):
-        self.data = [{
-            'set_name': x.name,
-            'card_count': x.card_count,
-            'active': x.active
-        } for x in STORAGE.card_sets]
-        SelectableRecycleBoxLayout.selected_nodes = [
-            i for i, card_set in enumerate(STORAGE.card_sets) if card_set.active]
-
-    def get_selected(self):
-        return [Table.rv.data[ix]['set_name'] for node, ix in
-                self.ids['rv_layout'].view_indices.items() if node.selected]
-
-
-class Table(BoxLayout):
-    rv = ObjectProperty(None)
-
-    def __init__(self, **kwargs):
-        super(Table, self).__init__(**kwargs)
-        Logger.info('in Table')
-        self.orientation = "vertical"
-        Table.rv = RV()
-        self.add_widget(self.rv)
 
 
 # Declare both screens
 class ManageScreen(Screen):
 
-    def __init__(self, **kwargs):
+    def __init__(self, storage, **kwargs):
         super(ManageScreen, self).__init__(**kwargs)
+        self.storage = storage
         Logger.info('in ManageScreen')
-        self.table = Table()
+        self.table = Table(self.storage)
         self.ids.set_table.add_widget(self.table)
 
     def open_learn(self):
         LearnScreen.selected_sets = Table.rv.get_selected()
-        sm.current = 'learn'
+        if len(LearnScreen.selected_sets):
+            sm.current = 'learn'
 
     def create_new_card_set(self):
-        EditStatePopup().open()
+        EditStatePopup(self.storage).open()
 
 
 class CardSetScreen(Screen):
@@ -322,14 +163,15 @@ class CardSetScreen(Screen):
     current_set_name = None
     set_data = None
 
-    def __init__(self, **kwargs):
+    def __init__(self, storage, **kwargs):
         super().__init__(**kwargs)
+        self.storage = storage
         Logger.info('in CardSetScreen')
 
     def on_pre_enter(self, *args):
         if self.current_set_name is None:
             return
-        set_data = [x for x in STORAGE.card_sets if x.name == self.current_set_name]
+        set_data = [x for x in self.storage.card_sets if x.name == self.current_set_name]
         if not len(set_data):
             set_data = None
         else:
@@ -342,23 +184,76 @@ class LearnScreen(Screen):
     selected_sets = []
     card_data = []
 
-    def __init__(self, **kwargs):
+    def __init__(self, storage, **kwargs):
         super().__init__(**kwargs)
+        self.storage = storage
         Logger.info('in LearnScreen')
 
     def on_pre_enter(self, *args):
-        print(self.selected_sets)
-        STORAGE.set_sets_active(self.selected_sets)
-        LearnScreen.card_data = [
-            x for x in STORAGE.cards if x.card_set.name in self.selected_sets]
+        self.storage.set_sets_active(self.selected_sets)
+        card_data = [
+            x for x in self.storage.cards if x.card_set.name in self.selected_sets]
+        # ToDo: filter and sort
+        LearnScreen.card_data = card_data
+        self.update_questions()
+
+    @staticmethod
+    def _wrap_question(question, info):
+        info_str = '' if info is None or not len(info) else '(%s)' % info
+        return '%s %s' % (info_str, question)
+
+    def update_questions(self):
+        self.ids['answer'].text = ''
+        self.ids['q_this'].text = ''
+        self.ids['q_next'].text = ''
+        if self.current_card is not None:
+            self.ids['q_this'].text = self._wrap_question(
+                self.current_card.left, self.current_card.left_info)
+        if self.next_card is not None:
+            self.ids['q_next'].text = '(Upcoming: %s)' % self._wrap_question(
+                self.next_card.left, self.next_card.left_info)
+
+    @property
+    def current_card(self):
+        """
+
+        :rtype: storage.Card
+        """
+        if len(self.card_data):
+            return self.card_data[0]
+
+    @property
+    def next_card(self):
+        """
+
+        :rtype: storage.Card
+        """
+        if len(self.card_data) > 1:
+            return self.card_data[1]
+
+    def reveal(self):
+        if self.current_card is not None:
+            self.ids['answer'].text = self.current_card.right
+
+    def wrong_answer(self):
+        pass
+
+    def right_answer(self):
+        pass
+
+    def delay_current(self):
+        pass
+
+    def edit_current(self):
+        pass
 
 
 # Create the screen manager
 sm = ScreenManager()
 sm.transition = SlideTransition(duration=.2)
-sm.add_widget(ManageScreen(name='manage'))
-sm.add_widget(LearnScreen(name='learn'))
-sm.add_widget(CardSetScreen(name='cardset'))
+sm.add_widget(ManageScreen(STORAGE, name='manage'))
+sm.add_widget(LearnScreen(STORAGE, name='learn'))
+sm.add_widget(CardSetScreen(STORAGE, name='cardset'))
 
 
 class GoCardsApp(App):
