@@ -46,29 +46,28 @@
         Rectangle:
             pos: self.pos
             size: self.size
-    label1_text: 'label 1 text'
-    label2_text: 'label 2 text'
     pos: self.pos
     size: self.size
     Label:
+        size_hint: 3, 1
         id: id_label1
-        text: root.label1_text
     Label:
+        size_hint: 1, 1
         id: id_label2
-        text: root.label2_text
     BoxLayout:
-        padding: 10
+        size_hint: 1, 1
+        padding: 5
         Button:
             text: 'View'
             background_color: 0.145, 0.431, 0.369, 1.
             font_size: 14
             on_press: root.view_set()
 
-<RV>:
+<CardSetRV>:
     viewclass: 'SelectableLabel'
     SelectableRecycleBoxLayout:
         id: rv_layout
-        default_size: None, dp(56)
+        default_size: None, dp(42)
         default_size_hint: 1, None
         size_hint_y: None
         height: self.minimum_height
@@ -88,13 +87,16 @@
             NavbarButton:
                 text: 'Import'
             NavbarButton:
-                text: 'NewSet'
+                text: 'New Set'
                 on_press: root.create_new_card_set()
+            NavbarButton:
+                text: 'Merge'
+                on_press: root.merge_card_sets()
             NavbarButton:
                 text: 'Learn'
                 on_press: root.open_learn()
 
         BoxLayout:
-            id: set_table
+            id: card_set_table
             orientation: 'vertical'
             size_hint_y: 11

@@ -1,4 +1,35 @@
+<CardListLabel>:
+    # Draw a background to indicate selection
+    orientation: 'horizontal'
+    padding: 0
+    spacing: 1
+    HiddenButton:
+        id: btn_left
+        halign: 'left'
+        valign: 'top'
+        on_press: root.edit()
+        size_hint: 1, 1
+        text_size: self.size[0] * .9, self.size[1] * .9
+    HiddenButton:
+        id: btn_right
+        halign: 'left'
+        valign: 'top'
+        on_press: root.edit()
+        size_hint: 1, 1
+        text_size: self.size[0] * .9, self.size[1] * .9
+
+<CardRV>:
+    viewclass: 'CardListLabel'
+    RecycleBoxLayout:
+        orientation: 'vertical'
+        default_size: None, dp(42)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+
 <CardSetScreen>:
+    box_card_table: box_card_table
+
     BoxLayout:
         orientation: 'vertical'
 
@@ -10,3 +41,44 @@
             NavbarButton:
                 text: 'Back'
                 on_press: root.manager.current = 'manage'
+            NavbarButton:
+                text: 'Export'
+                on_press: root.export_popup()
+            NavbarButton:
+                text: 'Edit'
+                on_press: root.edit_popup()
+            NavbarButton:
+                text: 'Copy'
+                on_press: root.copy_popup()
+            NavbarButton:
+                id: btn_hide_known
+                text: 'Hide Known'
+                on_press: root.toggle_known()
+
+        Label:
+            size_hint_y: 1
+            id: title
+            font_size: 20
+
+        BoxLayout:
+            id: box_card_table
+            orientation: 'vertical'
+            size_hint_y: 11
+
+        #BoxLayout:
+        #    orientation: 'vertical'
+        #    spacing: 1
+        #    padding: 1
+        #    size_hint_y: 11
+        #    NavbarButton:
+        #        text: 'Reset Cards'
+        #    NavbarButton:
+        #        text: 'Create Copy'
+        #    NavbarButton:
+        #        text: 'Create Shuffle Copy'
+        #    NavbarButton:
+        #        text: 'Create Swap Sides Copy'
+        #    NavbarButton:
+        #        id: btn_switch_known
+        #        text: 'Hide Known'
+        #

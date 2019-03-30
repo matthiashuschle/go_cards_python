@@ -73,7 +73,10 @@ class LearnScreen(Screen):
         self.total_cards = len(card_data)
         now = datetime.datetime.utcnow()
         card_data = [x for x in card_data if x.hidden_until < now]
-        self.card_data = sorted(card_data, key=lambda x: x.hidden_until)
+        # unseen cards are shown last! Repeat seen cards first for better learning effect on large sets
+        seen = [x for x in card_data if x.hidden_until > datetime.datetime.min]
+        unseen = [x for x in card_data if x.hidden_until == datetime.datetime.min]
+        self.card_data = sorted(seen, key=lambda x: x.hidden_until) + unseen
         self.update_questions()
 
     @staticmethod

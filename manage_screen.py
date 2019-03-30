@@ -1,8 +1,7 @@
 from kivy.logger import Logger
-from kivy.properties import BooleanProperty, ObjectProperty
+from kivy.properties import BooleanProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors import FocusBehavior
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview import RecycleView
@@ -46,16 +45,16 @@ class SelectableLabel(RecycleDataViewBehavior, GridLayout):
         self.selected = is_selected
 
     def view_set(self):
-        # setup car set view screen
-        get_screen('cardset').current_set_name = Table.rv.data[self.index]['set_name']
-        # switch to card set view
+        get_screen('cardset').set_set_name(
+            get_screen('manage').rv.data[self.index]['set_name']
+        )
         set_screen_active('cardset')
 
 
-class RV(RecycleView):
+class CardSetRV(RecycleView):
 
     def __init__(self, storage, **kwargs):
-        super(RV, self).__init__(**kwargs)
+        super(CardSetRV, self).__init__(**kwargs)
         self.storage = storage
         Logger.info('in RV')
         self.reset_data()
@@ -70,19 +69,8 @@ class RV(RecycleView):
             i for i, card_set in enumerate(self.storage.card_sets) if card_set.active]
 
     def get_selected(self):
-        return [Table.rv.data[ix]['set_name'] for node, ix in
+        return [self.data[ix]['set_name'] for node, ix in
                 self.ids['rv_layout'].view_indices.items() if node.selected]
-
-
-class Table(BoxLayout):
-    rv = ObjectProperty(None)
-
-    def __init__(self, storage, **kwargs):
-        super(Table, self).__init__(**kwargs)
-        Logger.info('in Table')
-        self.orientation = "vertical"
-        Table.rv = RV(storage)
-        self.add_widget(self.rv)
 
 
 class EditStatePopup(Popup):
@@ -113,7 +101,7 @@ class EditStatePopup(Popup):
             self.ids['alert'].text = 'name already exists!'
             return
         self.storage.add_new_set(*content)
-        Table.rv.reset_data()
+        get_screen('manage').rv.reset_data()
         self.dismiss()
 
 
@@ -124,11 +112,11 @@ class ManageScreen(Screen):
         self.storage = storage
         self.import_dir = import_dir
         Logger.info('in ManageScreen')
-        self.table = Table(self.storage)
-        self.ids.set_table.add_widget(self.table)
+        self.rv = CardSetRV(storage)
+        self.ids.card_set_table.add_widget(self.rv)
 
     def open_learn(self):
-        selected_set_ids = self.table.rv.get_selected()
+        selected_set_ids = self.rv.get_selected()
         get_screen('learn').update_cards(selected_set_ids)
         if len(selected_set_ids):
             set_screen_active('learn')
