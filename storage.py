@@ -1,7 +1,7 @@
 import peewee
 from contextlib import contextmanager
 from kivy.logger import Logger
-from models import CardSet, Card, database
+from db_models import CardSet, Card, database
 import threading
 from queue import Queue, Empty
 

@@ -20,6 +20,15 @@ class CardSet(BaseModel):
     right_info = pw.CharField(default='')
     active = pw.BooleanField(default=False)
 
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'description': self.description,
+            'left_info': self.left_info,
+            'right_info': self.right_info,
+            'active': self.active,
+        }
+
 
 class Card(BaseModel):
     card_id = pw.AutoField()
@@ -31,3 +40,15 @@ class Card(BaseModel):
     last_seen = pw.DateTimeField(default=datetime.min)
     streak = pw.IntegerField(default=0)
     hidden_until = pw.DateTimeField(default=datetime.min)
+
+    def to_dict(self):
+        return {
+            'card_id': self.card_id,
+            'left': self.left,
+            'right': self.right,
+            'left_info': self.left_info,
+            'right_info': self.right_info,
+            'last_seen': self.last_seen,
+            'streak': self.streak,
+            'hidden_until': self.hidden_until,
+        }

@@ -1,3 +1,4 @@
+import os
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.lang import Builder
@@ -20,12 +21,11 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.recycleview import RecycleView
 from kivy.logger import Logger
-import sqlite3 as lite
-import re
-import datetime
 
 import storage
-from recycleview_manage import *
+from learn_screen import *
+from manage_screen import *
+from cardset_screen import *
 
 Window.size = (480, 768)
 
@@ -35,261 +35,34 @@ COLORS = {
     'light': (0.29, 0.569, 0.188),
     'dark': (0.173, 0.278, 0.439)
 }
-STORAGE = storage.Storage()
 
-# Create both screens. Please note the root.manager.current: this is how
-# you can control the ScreenManager from kv. Each screen has by default a
-# property manager that gives you the instance of the ScreenManager used.
-Builder.load_file('general.kv')
-Builder.load_file('new_set.kv')
-Builder.load_file('recycleview_manage.kv')
-Builder.load_string("""
-<ManageScreen>:
-    BoxLayout:
-        orientation: 'vertical'
-
-        BoxLayout:
-            orientation: 'horizontal'
-            spacing: 1
-            padding: 1
-            size_hint_y: 1
-            NavbarButton:
-                text: 'Import'
-            NavbarButton:
-                text: 'NewSet'
-                on_press: root.create_new_card_set()
-            NavbarButton:
-                text: 'Learn'
-                on_press: root.open_learn()
-
-        BoxLayout:
-            id: set_table
-            orientation: 'vertical'
-            size_hint_y: 11
-            
-<CardSetScreen>:
-    BoxLayout:
-        orientation: 'vertical'
-
-        BoxLayout:
-            orientation: 'horizontal'
-            spacing: 1
-            padding: 1
-            size_hint_y: 1
-            NavbarButton:
-                text: 'Back'
-                on_press: root.manager.current = 'manage'
-
-<LearnScreen>:
-
-    BoxLayout:
-        orientation: 'vertical'
-
-        BoxLayout:
-            id: navbar
-            orientation: 'horizontal'
-            spacing: 1
-            padding: 1
-            size_hint_y: 1
-            NavbarButton:
-                text: 'Back'
-                on_press: root.manager.current = 'manage'
-            NavbarButton:
-                text: 'Delay 10hrs'
-                on_press: root.delay_current()
-            NavbarButton:
-                text: 'Edit'
-                on_press: root.edit_current()
-
-        BoxLayout:
-            id: questions
-            orientation: 'vertical'
-            size_hint_y: 8
-            HiddenButton:
-                id: q_next
-                text: 'foo'
-                color: .6, .6, .6, 1.
-                font_size: 14
-                on_press: root.reveal()
-            HiddenButton:
-                id: q_this
-                text: 'bar'
-                font_size: 20
-                on_press: root.reveal()
-            HiddenButton:
-                id: answer
-                text: 'hidden answer'
-                font_size: 20
-                on_press: root.reveal()
-                
-        BoxLayout:
-            orientation: 'vertical'
-            size_hint_y: 3
-            BoxLayout:
-                orientation: 'horizontal'
-                spacing: 1
-                padding: 1
-                NavbarButton:
-                    background_color: 0.173, 0.278, 0.439, 1.
-                    text: 'wrong'
-                    on_press: root.wrong_answer()
-                NavbarButton:
-                    background_color: 0.29, 0.569, 0.188, 1.
-                    text: 'correct'
-                    on_press: root.right_answer()
-""")
-
-
-# Declare both screens
-class ManageScreen(Screen):
-
-    def __init__(self, storage, **kwargs):
-        super(ManageScreen, self).__init__(**kwargs)
-        self.storage = storage
-        Logger.info('in ManageScreen')
-        self.table = Table(self.storage)
-        self.ids.set_table.add_widget(self.table)
-
-    def open_learn(self):
-        LearnScreen.selected_sets = Table.rv.get_selected()
-        if len(LearnScreen.selected_sets):
-            sm.current = 'learn'
-
-    def create_new_card_set(self):
-        EditStatePopup(self.storage).open()
-
-
-class CardSetScreen(Screen):
-
-    current_set_name = None
-    set_data = None
-
-    def __init__(self, storage, **kwargs):
-        super().__init__(**kwargs)
-        self.storage = storage
-        Logger.info('in CardSetScreen')
-
-    def on_pre_enter(self, *args):
-        if self.current_set_name is None:
-            return
-        set_data = [x for x in self.storage.card_sets if x.name == self.current_set_name]
-        if not len(set_data):
-            set_data = None
-        else:
-            set_data = set_data[0]
-        CardSetScreen.set_data = set_data
-
-
-class LearnScreen(Screen):
-
-    selected_sets = []
-    card_data = []
-
-    def __init__(self, storage, **kwargs):
-        super().__init__(**kwargs)
-        self.storage = storage
-        Logger.info('in LearnScreen')
-
-    def on_pre_enter(self, *args):
-        # ToDo: reset after changing selected Sets
-        self.storage.set_sets_active(self.selected_sets)
-        card_data = [
-            x for x in self.storage.cards if x.card_set.name in self.selected_sets]
-        # ToDo: filter and sort
-        LearnScreen.card_data = card_data
-        self.update_questions()
-
-    @staticmethod
-    def _wrap_question(question, info):
-        info_str = '' if info is None or not len(info) else '(%s)' % info
-        return '%s %s' % (info_str, question)
-
-    def update_questions(self):
-        self.ids['answer'].text = ''
-        self.ids['q_this'].text = ''
-        self.ids['q_next'].text = ''
-        if self.current_card is not None:
-            self.ids['q_this'].text = self._wrap_question(
-                self.current_card.left, self.current_card.left_info)
-        if self.next_card is not None:
-            self.ids['q_next'].text = '(Upcoming: %s)' % self._wrap_question(
-                self.next_card.left, self.next_card.left_info)
-
-    @property
-    def current_card(self):
-        """
-
-        :rtype: storage.Card
-        """
-        if len(self.card_data):
-            return self.card_data[0]
-
-    @property
-    def next_card(self):
-        """
-
-        :rtype: storage.Card
-        """
-        if len(self.card_data) > 1:
-            return self.card_data[1]
-
-    def reveal(self):
-        if self.current_card is None:
-            sm.current = 'manage'
-            return
-        self.ids['answer'].text = self.current_card.right
-
-    def wrong_answer(self):
-        if self.current_card is None:
-            sm.current = 'manage'
-            return
-        self.current_card.streak = 0
-        self.storage.update_card_queue.put(self.current_card.card_id)
-        self.card_data.insert(min(6, len(self.card_data)), self.current_card)
-        self.card_data = self.card_data[min(len(self.card_data), 1):]
-        self.update_questions()
-
-    def right_answer(self):
-        if self.current_card is None:
-            sm.current = 'manage'
-            return
-        self.current_card.streak += 1
-        self.current_card.last_seen = datetime.datetime.utcnow()
-        self.current_card.hidden_until = datetime.datetime.utcnow() + \
-            datetime.timedelta(hours=(12 * 2 ** (self.current_card.streak - 1) - 2))
-        self.storage.update_card_queue.put(self.current_card.card_id)
-        self.card_data = self.card_data[min(len(self.card_data), 1):]
-        self.update_questions()
-
-    def delay_current(self):
-        if self.current_card is None:
-            sm.current = 'manage'
-            return
-        self.current_card.hidden_until = datetime.datetime.utcnow() + \
-            datetime.timedelta(hours=10)
-        self.storage.update_card_queue.put(self.current_card.card_id)
-        self.card_data = self.card_data[min(len(self.card_data), 1):]
-        self.update_questions()
-
-    def edit_current(self):
-        if self.current_card is None:
-            sm.current = 'manage'
-            return
-        pass
-
-
-# Create the screen manager
-sm = ScreenManager()
-sm.transition = SlideTransition(duration=.2)
-sm.add_widget(ManageScreen(STORAGE, name='manage'))
-sm.add_widget(LearnScreen(STORAGE, name='learn'))
-sm.add_widget(CardSetScreen(STORAGE, name='cardset'))
+Builder.load_file('common.kv')
+Builder.load_file('manage.kv')
+Builder.load_file('learn.kv')
+Builder.load_file('cardset.kv')
 
 
 class GoCardsApp(App):
 
     def build(self):
+        # Create the screen manager
+        storage_handler = storage.Storage()
+        sm = ScreenManager()
+        sm.transition = SlideTransition(duration=.2)
+        import_dir, export_dir = self.init_data_folder()
+        print('using folders:', import_dir, export_dir)
+        sm.add_widget(ManageScreen(storage_handler, import_dir, name='manage'))
+        sm.add_widget(LearnScreen(storage_handler, name='learn'))
+        sm.add_widget(CardSetScreen(storage_handler, export_dir, name='cardset'))
         return sm
+
+    def init_data_folder(self):
+        root_folder = self.user_data_dir
+        import_dir = os.path.join(root_folder, 'import')
+        export_dir = os.path.join(root_folder, 'export')
+        os.makedirs(import_dir, exist_ok=True)
+        os.makedirs(export_dir, exist_ok=True)
+        return import_dir, export_dir
 
 
 if __name__ == '__main__':

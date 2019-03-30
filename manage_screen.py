@@ -1,16 +1,16 @@
-from kivy.app import App
 from kivy.logger import Logger
 from kivy.properties import BooleanProperty, ObjectProperty
+from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview import RecycleView
-from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from common import get_screen, set_screen_active, PopupLabelCell
 
 
 class SelectableRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior,
@@ -28,9 +28,8 @@ class SelectableLabel(RecycleDataViewBehavior, GridLayout):
     def refresh_view_attrs(self, rv, index, data):
         """ Catch and handle the view changes """
         self.index = index
-        self.label1_text = data['set_name']
-        self.label2_text = str(data['card_count'])
-        # self.ids['id_label3'].text = str(data['active'])
+        self.ids['id_label1'].text = data['set_name']
+        self.ids['id_label2'].text = str(data['card_count'])
         self.selected = data['active']
         return super(SelectableLabel, self).refresh_view_attrs(
             rv, index, data)
@@ -45,19 +44,12 @@ class SelectableLabel(RecycleDataViewBehavior, GridLayout):
     def apply_selection(self, rv, index, is_selected):
         """ Respond to the selection of items in the view. """
         self.selected = is_selected
-        # print(STORAGE.card_sets[index].name)
-        # if is_selected:
-        #     print("selection changed to {0}".format(rv.data[index]))
-        # else:
-        #     print("selection removed for {0}".format(rv.data[index]))
 
     def view_set(self):
         # setup car set view screen
-        sm = App.get_running_app().root
-        sm.get_screen('cardset').current_set_name = \
-            Table.rv.data[self.index]['set_name']
+        get_screen('cardset').current_set_name = Table.rv.data[self.index]['set_name']
         # switch to card set view
-        sm.current = 'cardset'
+        set_screen_active('cardset')
 
 
 class RV(RecycleView):
@@ -93,10 +85,6 @@ class Table(BoxLayout):
         self.add_widget(self.rv)
 
 
-class PopupLabelCell(Label):
-    pass
-
-
 class EditStatePopup(Popup):
 
     def __init__(self, storage, **kwargs):
@@ -127,3 +115,23 @@ class EditStatePopup(Popup):
         self.storage.add_new_set(*content)
         Table.rv.reset_data()
         self.dismiss()
+
+
+class ManageScreen(Screen):
+
+    def __init__(self, storage, import_dir, **kwargs):
+        super().__init__(**kwargs)
+        self.storage = storage
+        self.import_dir = import_dir
+        Logger.info('in ManageScreen')
+        self.table = Table(self.storage)
+        self.ids.set_table.add_widget(self.table)
+
+    def open_learn(self):
+        selected_set_ids = self.table.rv.get_selected()
+        get_screen('learn').update_cards(selected_set_ids)
+        if len(selected_set_ids):
+            set_screen_active('learn')
+
+    def create_new_card_set(self):
+        EditStatePopup(self.storage).open()

@@ -1,0 +1,12 @@
+<CardSetScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+
+        BoxLayout:
+            orientation: 'horizontal'
+            spacing: 1
+            padding: 1
+            size_hint_y: 1
+            NavbarButton:
+                text: 'Back'
+                on_press: root.manager.current = 'manage'

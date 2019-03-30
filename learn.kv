@@ -1,0 +1,127 @@
+<EditCardPopup>:
+    container: container
+    size_hint: None, None
+    size: 450, 500
+    title_size: 20
+    auto_dismiss: False
+
+    BoxLayout:
+        orientation: "vertical"
+
+        GridLayout:
+            id: container
+            cols: 2
+            row_default_height: 30
+            cols_minimum: {0: 50, 1: 300}
+            # spacing: 10, 10
+            # padding: 20, 20
+            size_hint: (None, None)
+            height: self.minimum_height
+            PopupLabelCell:
+                text: 'Question'
+            TextInput:
+                id: edit_q
+            PopupLabelCell:
+                text: 'Answer'
+            TextInput:
+                id: edit_a
+            PopupLabelCell:
+                text: 'Question Info'
+            TextInput:
+                id: edit_qi
+            PopupLabelCell:
+                text: 'Answer Info'
+            TextInput:
+                id: edit_ai
+            PopupLabelCell:
+                text: '*Streak'
+            TextInput:
+                id: edit_s
+
+        Label:
+            text: '*Streak of correct answers.\nDon\'t modify if you don\'t know\nwhat you are doing!'
+
+        Label:
+            id: alert
+            color: 1, 0, 0, 1
+            text: ''
+
+        BoxLayout:
+            size_hint_y: .8
+            spacing: 1
+            padding: 1
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Save"
+                on_release:
+                    root.save()
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Cancel"
+                on_release:
+                    root.cancel()
+
+<LearnScreen>:
+
+    set_info_label: set_info_label
+
+    BoxLayout:
+        orientation: 'vertical'
+
+        BoxLayout:
+            id: navbar
+            orientation: 'horizontal'
+            spacing: 1
+            padding: 1
+            size_hint_y: 1
+            NavbarButton:
+                text: 'Back'
+                on_press: root.manager.current = 'manage'
+            NavbarButton:
+                text: 'Delay 10hrs'
+                on_press: root.delay_current()
+            NavbarButton:
+                text: 'Edit'
+                on_press: root.edit_current()
+
+        Label:
+            id: set_info_label
+            size_hint_y: 1
+            color: .6, .6, .6, 1.
+
+        BoxLayout:
+            id: questions
+            orientation: 'vertical'
+            size_hint_y: 7
+            HiddenButton:
+                id: q_next
+                text: 'foo'
+                color: .6, .6, .6, 1.
+                font_size: 14
+                on_press: root.reveal()
+            HiddenButton:
+                id: q_this
+                text: 'bar'
+                font_size: 20
+                on_press: root.reveal()
+            HiddenButton:
+                id: answer
+                text: 'hidden answer'
+                font_size: 20
+                on_press: root.reveal()
+
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_y: 3
+            BoxLayout:
+                orientation: 'horizontal'
+                spacing: 1
+                padding: 1
+                NavbarButton:
+                    background_color: 0.173, 0.278, 0.439, 1.
+                    text: 'wrong'
+                    on_press: root.wrong_answer()
+                NavbarButton:
+                    background_color: 0.29, 0.569, 0.188, 1.
+                    text: 'correct'
+                    on_press: root.right_answer()
