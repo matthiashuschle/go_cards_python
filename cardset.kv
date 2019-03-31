@@ -1,3 +1,182 @@
+<EditCardSetPopup>:
+    container: container
+    size_hint: None, None
+    size: 450, 500
+    title_size: 20
+    auto_dismiss: False
+
+    BoxLayout:
+        orientation: "vertical"
+
+        GridLayout:
+            id: container
+            cols: 2
+            row_default_height: 30
+            cols_minimum: {0: 50, 1: 300}
+            size_hint: (None, None)
+            height: self.minimum_height
+            PopupLabelCell:
+                text: 'name'
+            TextInput:
+                id: edit_name
+            PopupLabelCell:
+                text: 'description'
+            TextInput:
+                id: edit_description
+            PopupLabelCell:
+                text: '*question info'
+            TextInput:
+                id: edit_qi
+            PopupLabelCell:
+                text: '*answer info'
+            TextInput:
+                id: edit_ai
+
+        Label:
+            text: '*Default info for new cards.'
+
+        Label:
+            id: alert
+            color: 1, 0, 0, 1
+            text: ''
+
+        BoxLayout:
+            size_hint_y: .8
+            spacing: 1
+            padding: 1
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Save"
+                on_release:
+                    root.save()
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Cancel"
+                on_release:
+                    root.cancel()
+
+<NewCardPopup>:
+    container: container
+    size_hint: None, None
+    size: 450, 500
+    title_size: 20
+    auto_dismiss: False
+
+    BoxLayout:
+        orientation: "vertical"
+
+        GridLayout:
+            id: container
+            cols: 2
+            row_default_height: 30
+            cols_minimum: {0: 50, 1: 300}
+            size_hint: (None, None)
+            height: self.minimum_height
+            PopupLabelCell:
+                text: 'question'
+            TextInput:
+                id: edit_q
+            PopupLabelCell:
+                text: 'answer'
+            TextInput:
+                id: edit_a
+            PopupLabelCell:
+                text: 'question info'
+            TextInput:
+                id: edit_qi
+            PopupLabelCell:
+                text: 'answer info'
+            TextInput:
+                id: edit_ai
+
+        Label:
+            text: '*Streak of correct answers.'
+
+        Label:
+            id: alert
+            color: 1, 0, 0, 1
+            text: ''
+
+        BoxLayout:
+            size_hint_y: .8
+            spacing: 1
+            padding: 1
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Save"
+                on_release:
+                    root.save()
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Cancel"
+                on_release:
+                    root.cancel()
+
+<FullEditCardPopup>:
+    container: container
+    size_hint: None, None
+    size: 450, 500
+    title_size: 20
+    auto_dismiss: False
+
+    BoxLayout:
+        orientation: "vertical"
+
+        GridLayout:
+            id: container
+            cols: 2
+            row_default_height: 30
+            cols_minimum: {0: 50, 1: 300}
+            size_hint: (None, None)
+            height: self.minimum_height
+            PopupLabelCell:
+                text: 'question'
+            TextInput:
+                id: edit_q
+            PopupLabelCell:
+                text: 'answer'
+            TextInput:
+                id: edit_a
+            PopupLabelCell:
+                text: 'question info'
+            TextInput:
+                id: edit_qi
+            PopupLabelCell:
+                text: 'answer info'
+            TextInput:
+                id: edit_ai
+            PopupLabelCell:
+                text: '*streak'
+            TextInput:
+                id: edit_s
+            PopupLabelCell:
+                text: 'hidden until'
+            TextInput:
+                id: edit_hu
+
+        Label:
+            text: '*Streak of correct answers.'
+
+        Label:
+            id: alert
+            color: 1, 0, 0, 1
+            text: ''
+
+        BoxLayout:
+            size_hint_y: .8
+            spacing: 1
+            padding: 1
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Save"
+                on_release:
+                    root.save()
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Cancel"
+                on_release:
+                    root.cancel()
+
 <CardListLabel>:
     # Draw a background to indicate selection
     orientation: 'horizontal'
@@ -46,7 +225,7 @@
                 on_press: root.export_popup()
             NavbarButton:
                 text: 'Edit'
-                on_press: root.edit_popup()
+                on_press: root.edit_cardset()
             NavbarButton:
                 text: 'Copy'
                 on_press: root.copy_popup()
@@ -61,24 +240,14 @@
             font_size: 20
 
         BoxLayout:
+            orientation: 'vertical'
+            size_hint_y: 0.5
+            padding: 3
+            NavbarButton:
+                text: 'New Card'
+                on_press: root.new_card()
+
+        BoxLayout:
             id: box_card_table
             orientation: 'vertical'
-            size_hint_y: 11
-
-        #BoxLayout:
-        #    orientation: 'vertical'
-        #    spacing: 1
-        #    padding: 1
-        #    size_hint_y: 11
-        #    NavbarButton:
-        #        text: 'Reset Cards'
-        #    NavbarButton:
-        #        text: 'Create Copy'
-        #    NavbarButton:
-        #        text: 'Create Shuffle Copy'
-        #    NavbarButton:
-        #        text: 'Create Swap Sides Copy'
-        #    NavbarButton:
-        #        id: btn_switch_known
-        #        text: 'Hide Known'
-        #
+            size_hint_y: 9.5

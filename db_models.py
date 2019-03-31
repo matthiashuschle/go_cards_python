@@ -14,6 +14,7 @@ class CardSet(BaseModel):
     """
     ORM model of the Card Sets table
     """
+    cardset_id = pw.AutoField()
     name = pw.CharField(unique=True)
     description = pw.CharField(default='')
     left_info = pw.CharField(default='')
@@ -22,6 +23,7 @@ class CardSet(BaseModel):
 
     def to_dict(self):
         return {
+            'cardset_id': self.cardset_id,
             'name': self.name,
             'description': self.description,
             'left_info': self.left_info,

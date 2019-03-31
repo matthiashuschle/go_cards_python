@@ -8,7 +8,37 @@ from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.properties import BooleanProperty
 from kivy.uix.boxlayout import BoxLayout
-from common import set_screen_active, get_screen
+from common import set_screen_active, get_screen, CardsetPopup, CardPopup
+import datetime
+
+
+class NewCardPopup(CardPopup):
+
+    id_map = {
+        'edit_q': 'left',
+        'edit_a': 'right',
+        'edit_qi': 'left_info',
+        'edit_ai': 'right_info',
+    }
+
+    def act_on_save(self, value_dict):
+        get_screen('cardset').act_on_new_card(value_dict)
+
+
+class EditCardSetPopup(CardsetPopup):
+
+    def act_on_save(self, value_dict):
+        for field, value in value_dict.items():
+            setattr(self.db_object, field, value)
+        get_screen('cardset').act_on_cardset_edit(self.db_object)
+
+
+class FullEditCardPopup(CardPopup):
+
+    def act_on_save(self, value_dict):
+        for field, value in value_dict.items():
+            setattr(self.db_object, field, value)
+        get_screen('cardset').act_on_card_edit(self.db_object)
 
 
 class CardListLabel(RecycleDataViewBehavior, BoxLayout):
@@ -71,6 +101,16 @@ class CardSetScreen(Screen):
         # self.ids.card_table.add_widget(self.card_table)
         Logger.info('in CardSetScreen')
 
+    def get_current_card_by_id(self, card_id):
+        target_card = None
+        for card in self.current_cards:
+            if card.card_id == card_id:
+                target_card = card
+                break
+        if target_card is None:
+            raise KeyError('no Card with ID %i.' % card_id)
+        return target_card
+
     def set_set_name(self, set_name):
         self.ids['title'].text = set_name
         set_data = [x for x in self.storage.card_sets if x.name == set_name]
@@ -88,4 +128,46 @@ class CardSetScreen(Screen):
         } for card in self.current_cards]
 
     def edit_card(self, card_id):
-        print('edit card', card_id)
+        """ Card edit popup """
+        FullEditCardPopup('Edit Card', db_object=self.get_current_card_by_id(card_id)).open()
+
+    def act_on_card_edit(self, card_db_object):
+        """ Digest result of card edit popup. """
+        self.storage.update_card_queue.put(card_db_object.card_id)
+        self.update_cards()
+
+    def new_card(self):
+        """ Card edit popup """
+        NewCardPopup('Create Card', default_vals={
+            'left_info': self.current_set.left_info,
+            'right_info': self.current_set.right_info,
+        }).open()
+
+    def act_on_new_card(self, value_dict):
+        """ Digest result of card edit popup. """
+        self.storage.add_new_card(value_dict, self.current_set)
+        self.update_cards()
+
+    def edit_cardset(self):
+        """ Card edit popup """
+        EditCardSetPopup('Edit Card Set', db_object=self.current_set, storage=self.storage).open()
+
+    def act_on_cardset_edit(self, cardset_db_object):
+        """ Digest result of card edit popup. """
+        self.storage.update_set(cardset_db_object.cardset_id)
+        self.ids['title'].text = cardset_db_object.name
+
+    def export_popup(self):
+        """ Export Card Set popup """
+        # ToDo: this
+
+    def copy_popup(self):
+        """ Copy Card Set popup.
+
+        With flags for shuffle, swap, reset, apply left/right info.
+        """
+        # ToDo: this
+
+    def toggle_known(self):
+        """ Export Card Set popup """
+        # ToDo: this

@@ -1,12 +1,11 @@
 import datetime
 from kivy.uix.screenmanager import Screen
 from kivy.logger import Logger
-from kivy.uix.popup import Popup
 from kivy.properties import ObjectProperty
-from common import set_screen_active, get_screen
+from common import set_screen_active, get_screen, DBElementPopup
 
 
-class EditCardPopup(Popup):
+class EditCardPopup(DBElementPopup):
 
     id_map = {
         'edit_q': 'left',
@@ -16,43 +15,21 @@ class EditCardPopup(Popup):
         'edit_s': 'streak'
     }
 
-    def __init__(self, card, **kwargs):
-        super(EditCardPopup, self).__init__(**kwargs)
-        self.card = card
-        self.title = 'Edit Card'
-        self.populate_content()
-
-    def populate_content(self):
-        card_dict = self.card.to_dict()
-        for cell_id, db_field in self.id_map.items():
-            self.ids[cell_id].text = str(card_dict[db_field])
-
-    def alert(self, msg):
-        self.ids['alert'].text = msg
-
-    def save(self):
-        card_dict = self.card.to_dict()
-        changed = False
-        for cell_id, db_field in self.id_map.items():
-            new_val = self.ids[cell_id].text.strip()
-            if db_field == 'streak':
-                try:
-                    new_val = int(new_val)
-                except ValueError:
-                    self.alert('invalid streak!')
-                    return
-            if new_val != card_dict[db_field]:
-                changed = True
-                setattr(self.card, db_field, new_val)
-        if changed:
-            get_screen('learn').act_on_card_edit()
-            self.dismiss()
-        else:
-            self.alert('nothing changed!')
+    def __init__(self, title, **kwargs):
+        if 'conversion' not in kwargs:
+            kwargs['conversion'] = {
+                'streak': int
+            }
+        super().__init__(title, **kwargs)
 
     def cancel(self):
         get_screen('learn').move_current_card_back()
         self.dismiss()
+
+    def act_on_save(self, value_dict):
+        for field, value in value_dict.items():
+            setattr(self.db_object, field, value)
+        get_screen('learn').act_on_card_edit()
 
 
 class LearnScreen(Screen):
@@ -163,7 +140,7 @@ class LearnScreen(Screen):
         if self.current_card is None:
             set_screen_active('manage')
             return
-        EditCardPopup(self.current_card).open()
+        EditCardPopup('Edit Card', db_object=self.current_card).open()
 
     def act_on_card_edit(self):
         self.storage.update_card_queue.put(self.current_card.card_id)

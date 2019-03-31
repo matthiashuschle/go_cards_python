@@ -1,4 +1,4 @@
-<EditStatePopup>:
+<NewCardsetPopup>:
     container: container
     size_hint: None, None
     size: 450, 500
@@ -13,10 +13,27 @@
             cols: 2
             row_default_height: 30
             cols_minimum: {0: 50, 1: 300}
-            # spacing: 10, 10
-            # padding: 20, 20
             size_hint: (None, None)
             height: self.minimum_height
+            PopupLabelCell:
+                text: 'name'
+            TextInput:
+                id: edit_name
+            PopupLabelCell:
+                text: 'description'
+            TextInput:
+                id: edit_description
+            PopupLabelCell:
+                text: '*question info'
+            TextInput:
+                id: edit_qi
+            PopupLabelCell:
+                text: '*answer info'
+            TextInput:
+                id: edit_ai
+
+        Label:
+            text: '*Default info for new cards.'
 
         Label:
             id: alert

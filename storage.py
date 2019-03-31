@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from kivy.logger import Logger
 from db_models import CardSet, Card, database
 import threading
-from queue import Queue, Empty
+from queue import Queue
 
 
 class Storage:
@@ -66,9 +66,22 @@ class Storage:
                 card_set.active = card_set.name in active_sets
                 card_set.save()
 
-    def add_new_set(self, name, description, left_info, right_info):
+    def add_new_set(self, value_dict):
         with self.db_lock:
-            new_set = CardSet(name=name, description=description,
-                              left_info=left_info, right_info=right_info)
+            new_set = CardSet(**value_dict)
             new_set.save()
             self.refresh_data()
+
+    def add_new_card(self, value_dict, card_set):
+        with self.db_lock:
+            new_card = Card(card_set=card_set, **value_dict)
+            new_card.save()
+            self.refresh_data()
+
+    def update_set(self, cardset_id):
+        with self.db_lock:
+            cardset = [x for x in self.card_sets if x.cardset_id == cardset_id]
+            if len(cardset) != 1:
+                return
+            cardset = cardset[0]
+            cardset.save()

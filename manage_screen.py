@@ -9,7 +9,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
-from common import get_screen, set_screen_active, PopupLabelCell
+from common import get_screen, set_screen_active, PopupLabelCell, CardsetPopup
 
 
 class SelectableRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior,
@@ -73,36 +73,10 @@ class CardSetRV(RecycleView):
                 self.ids['rv_layout'].view_indices.items() if node.selected]
 
 
-class EditStatePopup(Popup):
+class NewCardsetPopup(CardsetPopup):
 
-    def __init__(self, storage, **kwargs):
-        super(EditStatePopup, self).__init__(**kwargs)
-        self.storage = storage
-        self.title = 'Create New Card Set'
-        self.populate_content()
-
-    def populate_content(self):
-        for field in ['*name', 'description', 'left info', 'right info']:
-            self.container.add_widget(PopupLabelCell(text=field))
-            textinput = TextInput(text='')
-            self.container.add_widget(textinput)
-
-    def save(self):
-        # children are reversed
-        content = list(reversed([
-            thing.text.strip() for i, thing in enumerate(self.container.children)
-            if i % 2 == 0
-        ]))
-        existing_names = set(x.name for x in self.storage.card_sets)
-        if not len(content[0]):
-            self.ids['alert'].text = 'no name given!'
-            return
-        if len(content[0]) and content[0] in existing_names:
-            self.ids['alert'].text = 'name already exists!'
-            return
-        self.storage.add_new_set(*content)
-        get_screen('manage').rv.reset_data()
-        self.dismiss()
+    def act_on_save(self, value_dict):
+        get_screen('manage').act_on_new_set(value_dict)
 
 
 class ManageScreen(Screen):
@@ -122,4 +96,8 @@ class ManageScreen(Screen):
             set_screen_active('learn')
 
     def create_new_card_set(self):
-        EditStatePopup(self.storage).open()
+        NewCardsetPopup('Create Card Set', storage=self.storage).open()
+
+    def act_on_new_set(self, value_dict):
+        self.storage.add_new_set(value_dict)
+        self.rv.reset_data()
