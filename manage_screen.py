@@ -101,3 +101,11 @@ class ManageScreen(Screen):
     def act_on_new_set(self, value_dict):
         self.storage.add_new_set(value_dict)
         self.rv.reset_data()
+
+    def merge(self):
+        # ToDo: this
+        pass
+
+    def cardset_import(self):
+        # ToDo: this
+        pass
