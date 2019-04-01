@@ -20,7 +20,11 @@ class ExportCardSetPopup(Popup):
 
     def __init__(self, export_dir, **kwargs):
         super().__init__(**kwargs)
-        self.ids['info_text'].text = 'Enter the filename without ending.\nExports to: %s' % export_dir
+        self.ids['info_text'].text = os.linesep.join([
+            'Enter the filename without ending.',
+            'Exports to:',
+            export_dir
+        ])
 
     def alert(self, msg):
         try:

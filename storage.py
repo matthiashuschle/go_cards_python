@@ -26,7 +26,7 @@ class Storage:
         self.card_sets = None
         self.cards = None
         self.db_lock = threading.Lock()
-        with self.db_lock:
+        with self.db_access():
             self.create_tables()
             self.refresh_data()
         self.update_card_queue = Queue()
@@ -47,7 +47,7 @@ class Storage:
                 if len(card) != 1:
                     continue
                 card = card[0]
-                with self.db_lock:
+                with self.db_access():
                     card.save()
 
     @staticmethod
@@ -81,21 +81,30 @@ class Storage:
                 card_set.save()
 
     def add_new_set(self, value_dict):
-        with self.db_lock:
+        with self.db_access():
             new_set = CardSet(**value_dict)
             new_set.save()
             self.refresh_data()
+            return new_set
 
     def add_new_card(self, value_dict, card_set):
-        with self.db_lock:
+        with self.db_access():
             new_card = Card(card_set=card_set, **value_dict)
             new_card.save()
             self.refresh_data()
 
     def update_set(self, cardset_id):
-        with self.db_lock:
+        with self.db_access():
             cardset = [x for x in self.card_sets if x.cardset_id == cardset_id]
             if len(cardset) != 1:
                 return
             cardset = cardset[0]
             cardset.save()
+
+    def add_many_cards(self, value_dicts, card_set):
+        with self.db_access():
+            for value_dict in value_dicts:
+                new_card = Card(card_set=card_set, **value_dict)
+                new_card.save()
+            self.refresh_data()
+

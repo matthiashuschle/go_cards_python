@@ -1,5 +1,8 @@
+import os
+import re
+import csv
 from kivy.logger import Logger
-from kivy.properties import BooleanProperty
+from kivy.properties import BooleanProperty, ObjectProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.gridlayout import GridLayout
@@ -9,7 +12,68 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
-from common import get_screen, set_screen_active, PopupLabelCell, CardsetPopup
+from common import get_screen, set_screen_active, PopupLabelCell, CardsetPopup, CARD_FROM_STRING
+
+
+class ImportCardSetPopup(Popup):
+
+    container = ObjectProperty(None)
+
+    def __init__(self, import_dir, **kwargs):
+        super().__init__(**kwargs)
+        self.import_dir = import_dir
+        self.ids['info_text'].text = os.linesep.join([
+            'Enter card set name,',
+            'leave blank to skip.',
+            'Imports from',
+            import_dir
+        ])
+        csvfiles = self.get_existing_files()
+        self.file_mapping = {file: 'file_to_%i' % i for i, file in enumerate(csvfiles)}
+        for filename in csvfiles:
+            self.container.add_widget(PopupLabelCell(text=filename))
+            text_input = TextInput()
+            self.container.add_widget(text_input)
+            self.ids[self.file_mapping[filename]] = text_input
+        if not len(csvfiles):
+            self.alert('no csv files found')
+
+    def get_existing_files(self):
+        csvfiles = sorted([os.path.basename(x) for x in os.listdir(self.import_dir) if x.lower().endswith('.csv')])
+        return csvfiles
+
+    def alert(self, msg):
+        try:
+            self.ids['alert'].text = msg
+        except KeyError:
+            pass
+
+    def do_import(self):
+        to_import = {}
+        for filename, field_id in self.file_mapping.items():
+            set_name = self.ids[field_id].text.strip()[:100]
+            if not len(set_name):
+                continue
+            # sanitize
+            set_name = re.sub(r'[\W]', '', set_name)
+            to_import[filename] = set_name
+            self.ids[field_id].text = set_name
+        if not len(to_import):
+            self.alert('nothing to do!')
+            return
+        set_names = set(to_import.values())
+        if len(set_names) != len(to_import):
+            self.alert('there are duplicates in the set names!')
+            return
+        duplicates = get_screen('manage').check_for_duplicates(set_names)
+        if len(duplicates):
+            self.alert('following sets already exist:' + os.linesep + ', '.join(duplicates))
+        try:
+            get_screen('manage').act_on_import(to_import)
+            self.dismiss()
+        except OSError:
+            self.alert('something went wrong!')
+            return
 
 
 class SelectableRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior,
@@ -107,5 +171,36 @@ class ManageScreen(Screen):
         pass
 
     def cardset_import(self):
-        # ToDo: this
-        pass
+        ImportCardSetPopup(self.import_dir).open()
+
+    def check_for_duplicates(self, set_names):
+        existing_names = set(x.name for x in self.storage.card_sets)
+        overlap = set_names & existing_names
+        return overlap
+
+    def act_on_import(self, to_import):
+        for filename, set_name in to_import.items():
+            full_path = os.path.join(self.import_dir, filename)
+            cardset = self.storage.add_new_set({'name': set_name})
+            cards = []
+            allowed_fields = ['left', 'right', 'left_info', 'right_info',
+                              'last_seen', 'streak', 'hidden_until']
+            with open(full_path, 'r') as csvfile:
+                reader = csv.DictReader(csvfile)
+                for row in reader:
+                    value_dict = {}
+                    for key, val in row.items():
+                        if key not in allowed_fields:
+                            continue
+                        if val is None:
+                            continue
+                        val = val.strip()
+                        if not len(val):
+                            continue
+                        if key in CARD_FROM_STRING:
+                            val = CARD_FROM_STRING[key](val)
+                        value_dict[key] = val
+                    if len(value_dict):
+                        cards.append(value_dict)
+            self.storage.add_many_cards(cards, cardset)
+        self.rv.reset_data()

@@ -1,3 +1,46 @@
+<ImportCardSetPopup>:
+    container: container
+    size_hint: None, None
+    size: 450, 400
+    title: 'Import Card Set'
+    title_size: 20
+    auto_dismiss: False
+
+    BoxLayout:
+        orientation: "vertical"
+
+        GridLayout:
+            id: container
+            cols: 2
+            row_default_height: 30
+            cols_minimum: {0: 50, 1: 300}
+            size_hint: (None, None)
+            height: self.minimum_height
+
+        Label:
+            id: info_text
+            text_size: self.size
+
+        Label:
+            id: alert
+            color: 1, 0, 0, 1
+            text: ''
+
+        BoxLayout:
+            size_hint_y: .8
+            spacing: 1
+            padding: 1
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Import"
+                on_release:
+                    root.do_import()
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Cancel"
+                on_release:
+                    root.dismiss()
+
 <NewCardsetPopup>:
     container: container
     size_hint: None, None
@@ -103,6 +146,7 @@
             size_hint_y: 1
             NavbarButton:
                 text: 'Import'
+                on_press: root.cardset_import()
             NavbarButton:
                 text: 'New Set'
                 on_press: root.create_new_card_set()

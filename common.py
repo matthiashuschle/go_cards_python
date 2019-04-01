@@ -1,8 +1,9 @@
+import os
+import datetime
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from storage import CARD_TO_STRING, CARD_FROM_STRING, CARDSET_TO_STRING, CARDSET_FROM_STRING
-import datetime
 
 
 class DBElementPopup(Popup):

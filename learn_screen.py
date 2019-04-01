@@ -1,3 +1,4 @@
+import os
 import datetime
 from kivy.uix.screenmanager import Screen
 from kivy.logger import Logger
@@ -60,13 +61,11 @@ class LearnScreen(Screen):
             self.ids['q_next'].text = '(Upcoming: %s)' % self._wrap_question(
                 self.next_card.left, self.next_card.left_info)
         # update set statistics:
-        self.set_info_label.text = \
-            'total selected cards: %i\n' \
-            'to learn this session: %i\n' \
-            'never seen: %i' % (
-                self.total_cards, len(self.card_data),
-                len([x for x in self.card_data if x.last_seen == MIN_DATE])
-            )
+        self.set_info_label.text = os.linesep.join([
+            'total selected cards: %i' % self.total_cards,
+            'to learn this session: %i' % len(self.card_data),
+            'never seen: %i' % len([x for x in self.card_data if x.last_seen == MIN_DATE])
+        ])
 
     @property
     def current_card(self):
