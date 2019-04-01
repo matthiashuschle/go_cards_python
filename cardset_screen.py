@@ -1,3 +1,7 @@
+import os
+import datetime
+import re
+import csv
 from kivy.uix.screenmanager import Screen
 from kivy.logger import Logger
 from kivy.properties import ObjectProperty
@@ -8,8 +12,39 @@ from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.properties import BooleanProperty
 from kivy.uix.boxlayout import BoxLayout
-from common import set_screen_active, get_screen, CardsetPopup, CardPopup
-import datetime
+from kivy.uix.popup import Popup
+from common import set_screen_active, get_screen, CardsetPopup, CardPopup, CARD_TO_STRING
+
+
+class ExportCardSetPopup(Popup):
+
+    def __init__(self, export_dir, **kwargs):
+        super().__init__(**kwargs)
+        self.ids['info_text'].text = 'Enter the filename without ending.\nExports to: %s' % export_dir
+
+    def alert(self, msg):
+        try:
+            self.ids['alert'].text = msg
+        except KeyError:
+            pass
+
+    def export(self):
+        filename = self.ids['filename'].text.strip()[:100]
+        if not len(filename):
+            self.alert('please enter a filename!')
+            return
+        # sanitize
+        sanitized = re.sub(r'[\W]', '', filename)
+        if sanitized != filename:
+            self.ids['filename'].text = sanitized
+            self.alert('please check the filename again!')
+            return
+        try:
+            get_screen('cardset').act_on_export(filename)
+            self.dismiss()
+        except OSError:
+            self.alert('something went wrong!')
+            return
 
 
 class NewCardPopup(CardPopup):
@@ -152,7 +187,19 @@ class CardSetScreen(Screen):
 
     def export_popup(self):
         """ Export Card Set popup """
-        # ToDo: this
+        ExportCardSetPopup(self.export_dir).open()
+
+    def act_on_export(self, filename):
+        """ Export Card Set after receiving the filename in the popup. """
+        with open(os.path.join(self.export_dir, filename + '.csv'), 'w', newline='') as csvfile:
+            fieldnames = ['left', 'right', 'left_info', 'right_info', 'last_seen', 'streak', 'hidden_until']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for card in self.current_cards:
+                card_dict = card.to_dict()
+                for field, conversion in CARD_TO_STRING.items():
+                    card_dict[field] = conversion(card_dict[field])
+                writer.writerow({x: y for x, y in card_dict.items() if x in fieldnames})
 
     def copy_popup(self):
         """ Copy Card Set popup.
