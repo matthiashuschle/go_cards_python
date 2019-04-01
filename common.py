@@ -1,6 +1,7 @@
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
+from storage import CARD_TO_STRING, CARD_FROM_STRING, CARDSET_TO_STRING, CARDSET_FROM_STRING
 import datetime
 
 
@@ -9,7 +10,7 @@ class DBElementPopup(Popup):
     id_map = {}
 
     def __init__(self, title, default_vals=None, db_object=None,
-                 conversion=None, storage=None, **kwargs):
+                 from_string_methods=None, to_string_methods=None, storage=None, **kwargs):
         super().__init__(**kwargs)
         self.title = title
         self.storage = storage
@@ -17,12 +18,20 @@ class DBElementPopup(Popup):
         self.default_vals = default_vals or {}
         if self.db_object is not None:
             self.default_vals = self.db_object.to_dict()
-        self.conversion = conversion or {}
+        self.from_string_methods = from_string_methods or {}
+        self.to_string_methods = to_string_methods or {}
         self.populate_content()
 
     def populate_content(self):
         for cell_id, db_field in self.id_map.items():
-            self.ids[cell_id].text = str(self.default_vals.get(db_field, ''))
+            conversion_method = self.to_string_methods.get(db_field, str)
+            try:
+                field_val = ''
+                if db_field in self.default_vals:
+                    field_val = conversion_method(self.default_vals[db_field])
+                self.ids[cell_id].text = field_val
+            except KeyError:
+                pass
 
     def alert(self, msg):
         try:
@@ -33,10 +42,13 @@ class DBElementPopup(Popup):
     def save(self):
         value_dict = {}
         for cell_id, db_field in self.id_map.items():
-            new_val = self.ids[cell_id].text.strip()
-            if db_field in self.conversion:
+            try:
+                new_val = self.ids[cell_id].text.strip()
+            except KeyError:
+                continue
+            if db_field in self.from_string_methods:
                 try:
-                    new_val = self.conversion[db_field](new_val)
+                    new_val = self.from_string_methods[db_field](new_val)
                 except ValueError:
                     self.alert('invalid value for %s!' % db_field)
                     return
@@ -51,7 +63,7 @@ class DBElementPopup(Popup):
             return True
         # edit existing
         db_vals = self.db_object.to_dict()
-        if all(db_vals[key] == val for key, val in value_dict.items()):
+        if all(self.from_string_methods.get(key, str)(db_vals[key]) == val for key, val in value_dict.items()):
             self.alert('nothing changed!')
             return False
         return True
@@ -75,6 +87,14 @@ class CardsetPopup(DBElementPopup):
         'edit_ai': 'right_info',
     }
 
+    def __init__(self, title, from_string_methods=None, to_string_methods=None, **kwargs):
+        super().__init__(
+            title,
+            from_string_methods=from_string_methods or CARDSET_FROM_STRING,
+            to_string_methods=to_string_methods or CARDSET_TO_STRING,
+            **kwargs
+        )
+
     def validate_input(self, value_dict):
         existing_names = set(x.name for x in self.storage.card_sets)
         if not len(value_dict['name']):
@@ -97,20 +117,13 @@ class CardPopup(DBElementPopup):
         'edit_hu': 'hidden_until'
     }
 
-    @staticmethod
-    def convert_date(date_str):
-        if len(date_str) < 19:
-            raise ValueError('date string is too short: %s' % date_str)
-        return datetime.datetime.strptime(date_str[:19], '%Y-%m-%d %H:%M:%S')
-
-    def __init__(self, title, **kwargs):
-        if 'conversion' not in kwargs:
-            kwargs['conversion'] = {
-                'streak': int,
-                'hidden_until': self.convert_date
-            }
-        super().__init__(title, **kwargs)
-
+    def __init__(self, title, from_string_methods=None, to_string_methods=None, **kwargs):
+        super().__init__(
+            title,
+            from_string_methods=from_string_methods or CARD_FROM_STRING,
+            to_string_methods=to_string_methods or CARD_TO_STRING,
+            **kwargs
+        )
 #
 #
 # class NewElementPopup(Popup):

@@ -2,25 +2,11 @@ import datetime
 from kivy.uix.screenmanager import Screen
 from kivy.logger import Logger
 from kivy.properties import ObjectProperty
-from common import set_screen_active, get_screen, DBElementPopup
+from storage import MIN_DATE, DT_FORMAT
+from common import set_screen_active, get_screen, CardPopup
 
 
-class EditCardPopup(DBElementPopup):
-
-    id_map = {
-        'edit_q': 'left',
-        'edit_a': 'right',
-        'edit_qi': 'left_info',
-        'edit_ai': 'right_info',
-        'edit_s': 'streak'
-    }
-
-    def __init__(self, title, **kwargs):
-        if 'conversion' not in kwargs:
-            kwargs['conversion'] = {
-                'streak': int
-            }
-        super().__init__(title, **kwargs)
+class EditCardPopup(CardPopup):
 
     def cancel(self):
         get_screen('learn').move_current_card_back()
@@ -51,8 +37,8 @@ class LearnScreen(Screen):
         now = datetime.datetime.utcnow()
         card_data = [x for x in card_data if x.hidden_until < now]
         # unseen cards are shown last! Repeat seen cards first for better learning effect on large sets
-        seen = [x for x in card_data if x.hidden_until > datetime.datetime.min]
-        unseen = [x for x in card_data if x.hidden_until == datetime.datetime.min]
+        seen = [x for x in card_data if x.hidden_until > MIN_DATE]
+        unseen = [x for x in card_data if x.hidden_until == MIN_DATE]
         self.card_data = sorted(seen, key=lambda x: x.hidden_until) + unseen
         self.update_questions()
 
@@ -79,7 +65,7 @@ class LearnScreen(Screen):
             'to learn this session: %i\n' \
             'never seen: %i' % (
                 self.total_cards, len(self.card_data),
-                len([x for x in self.card_data if x.last_seen == datetime.datetime.min])
+                len([x for x in self.card_data if x.last_seen == MIN_DATE])
             )
 
     @property
@@ -119,9 +105,9 @@ class LearnScreen(Screen):
             set_screen_active('manage')
             return
         self.current_card.streak += 1
-        self.current_card.last_seen = datetime.datetime.utcnow()
-        self.current_card.hidden_until = datetime.datetime.utcnow() + \
-            datetime.timedelta(hours=(12 * 2 ** (self.current_card.streak - 1) - 2))
+        self.current_card.last_seen = datetime_cut_ms(datetime.datetime.utcnow())
+        self.current_card.hidden_until = datetime_cut_ms(
+            datetime.datetime.utcnow() + datetime.timedelta(hours=(12 * 2 ** (self.current_card.streak - 1) - 2)))
         self.storage.update_card_queue.put(self.current_card.card_id)
         self.card_data = self.card_data[min(len(self.card_data), 1):]
         self.update_questions()
@@ -130,8 +116,8 @@ class LearnScreen(Screen):
         if self.current_card is None:
             set_screen_active('manage')
             return
-        self.current_card.hidden_until = datetime.datetime.utcnow() + \
-            datetime.timedelta(hours=10)
+        self.current_card.hidden_until = datetime_cut_ms(
+            datetime.datetime.utcnow() + datetime.timedelta(hours=10))
         self.storage.update_card_queue.put(self.current_card.card_id)
         self.card_data = self.card_data[min(len(self.card_data), 1):]
         self.update_questions()
@@ -151,3 +137,7 @@ class LearnScreen(Screen):
         self.card_data.insert(min(steps, len(self.card_data)), self.current_card)
         self.card_data = self.card_data[min(len(self.card_data), 1):]
         self.update_questions()
+
+
+def datetime_cut_ms(dt):
+    return datetime.datetime.strptime(dt.strftime(DT_FORMAT), DT_FORMAT)

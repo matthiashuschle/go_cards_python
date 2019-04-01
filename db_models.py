@@ -3,6 +3,7 @@ from datetime import datetime
 import peewee as pw
 
 database = pw.SqliteDatabase("gocards.db")
+MIN_DATE = datetime(1999, 12, 31)
 
 
 class BaseModel(pw.Model):
@@ -39,9 +40,9 @@ class Card(BaseModel):
     right = pw.CharField(default='')
     left_info = pw.CharField(default='')
     right_info = pw.CharField(default='')
-    last_seen = pw.DateTimeField(default=datetime.min)
+    last_seen = pw.DateTimeField(default=MIN_DATE)
     streak = pw.IntegerField(default=0)
-    hidden_until = pw.DateTimeField(default=datetime.min)
+    hidden_until = pw.DateTimeField(default=MIN_DATE)
 
     def to_dict(self):
         return {

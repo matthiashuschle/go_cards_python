@@ -1,9 +1,23 @@
 import peewee
 from contextlib import contextmanager
 from kivy.logger import Logger
-from db_models import CardSet, Card, database
+from db_models import CardSet, Card, database, MIN_DATE
 import threading
 from queue import Queue
+import datetime
+
+DT_FORMAT = '%Y-%m-%d %H:%M:%S'
+CARD_TO_STRING = {
+    'last_seen': lambda x: x.strftime(DT_FORMAT),
+    'hidden_until': lambda x: x.strftime(DT_FORMAT),
+}
+CARD_FROM_STRING = {
+    'last_seen': lambda x: datetime.datetime.strptime(x, DT_FORMAT),
+    'hidden_until': lambda x: datetime.datetime.strptime(x, DT_FORMAT),
+    'streak': int
+}
+CARDSET_TO_STRING = {}
+CARDSET_FROM_STRING = {}
 
 
 class Storage:

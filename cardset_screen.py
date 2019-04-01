@@ -14,13 +14,6 @@ import datetime
 
 class NewCardPopup(CardPopup):
 
-    id_map = {
-        'edit_q': 'left',
-        'edit_a': 'right',
-        'edit_qi': 'left_info',
-        'edit_ai': 'right_info',
-    }
-
     def act_on_save(self, value_dict):
         get_screen('cardset').act_on_new_card(value_dict)
 
