@@ -18,6 +18,19 @@ from common import (
     CARD_TO_STRING, DeletePopup)
 
 
+class ViewPopup(Popup):
+
+    def set_options(self):
+        options = {
+            'hide_known': self.ids['hide_known'].active,
+            'by_streak': self.ids['cb_streak'].active,
+            'by_left': self.ids['cb_left'].active,
+            'by_right': self.ids['cb_right'].active
+        }
+        get_screen('cardset').act_on_view(options)
+        self.dismiss()
+
+
 class CopyCardSetPopup(Popup):
 
     def __init__(self, existing_names, **kwargs):
@@ -150,13 +163,6 @@ class CardRV(RecycleView):
         self.storage = storage
         Logger.info('in RV')
 
-    def reset_data(self):
-        self.data = [{
-            'set_name': x.name,
-            'card_count': x.card_count,
-            'active': x.active
-        } for x in self.storage.card_sets]
-
 
 class CardSetScreen(Screen):
 
@@ -195,11 +201,14 @@ class CardSetScreen(Screen):
 
     def update_cards(self):
         self.current_cards = [x for x in self.storage.cards if x.card_set == self.current_set]
+        self._set_cards(self.current_cards)
+
+    def _set_cards(self, cards):
         self.rv.data = [{
             'card_id': card.card_id,
             'question': card.left,
             'answer': card.right
-        } for card in self.current_cards]
+        } for card in cards]
 
     def edit_card(self, card_id):
         """ Card edit popup """
@@ -274,4 +283,18 @@ class CardSetScreen(Screen):
         self.storage.delete_card(card)
         self.update_cards()
 
-    # ToDo: show streak in table
+    def view_popup(self):
+        ViewPopup().open()
+
+    def act_on_view(self, options):
+        cards = [x for x in self.current_cards]
+        if options['hide_known']:
+            now = datetime.datetime.utcnow()
+            cards = [x for x in cards if x.hidden_until < now]
+        if options['by_streak']:
+            cards = sorted(cards, key=lambda x: x.streak)
+        if options['by_left']:
+            cards = sorted(cards, key=lambda x: x.left)
+        if options['by_right']:
+            cards = sorted(cards, key=lambda x: x.right)
+        self._set_cards(cards)

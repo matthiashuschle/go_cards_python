@@ -80,7 +80,7 @@ class DBElementPopup(Popup):
             return True
         # edit existing
         db_vals = self.db_object.to_dict()
-        if all(self.from_string_methods.get(key, str)(db_vals[key]) == val for key, val in value_dict.items()):
+        if all(db_vals[key] == val for key, val in value_dict.items()):
             self.alert('nothing changed!')
             return False
         return True

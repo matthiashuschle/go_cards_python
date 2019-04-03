@@ -1,3 +1,57 @@
+<ViewPopup>:
+    size_hint: None, None
+    size: 450, 300
+    title: 'Set View Options'
+    title_size: 20
+    auto_dismiss: False
+
+    BoxLayout:
+        orientation: "vertical"
+        Label:
+            id: info_text
+            text_size: self.size
+
+        GridLayout:
+            cols: 2
+            row_default_height: 30
+            cols_minimum: {0: 150, 1: 150}
+            size_hint: (None, None)
+            height: self.minimum_height
+            PopupLabelCell:
+                text: 'hide known'
+            CheckBox:
+                id: hide_known
+            PopupLabelCell:
+                text: 'sort by streak'
+            CheckBox:
+                id: cb_streak
+                group: 'g_sort'
+            PopupLabelCell:
+                text: 'sort by question'
+            CheckBox:
+                id: cb_left
+                group: 'g_sort'
+            PopupLabelCell:
+                text: 'sort by answer'
+            CheckBox:
+                id: cb_right
+                group: 'g_sort'
+
+        BoxLayout:
+            size_hint_y: .8
+            spacing: 1
+            padding: 1
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Set"
+                on_release:
+                    root.set_options()
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Cancel"
+                on_release:
+                    root.dismiss()
+
 <CopyCardSetPopup>:
     size_hint: None, None
     size: 450, 400
@@ -348,6 +402,9 @@
             NavbarButton:
                 text: 'Delete'
                 on_press: root.delete_set_popup()
+            NavbarButton:
+                text: 'View'
+                on_press: root.view_popup()
 
         Label:
             size_hint_y: 1
