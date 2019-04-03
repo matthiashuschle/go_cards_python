@@ -1,3 +1,69 @@
+<CopyCardSetPopup>:
+    size_hint: None, None
+    size: 450, 400
+    title: 'Copy Card Set'
+    title_size: 20
+    auto_dismiss: False
+
+    BoxLayout:
+        orientation: "vertical"
+
+        GridLayout:
+            cols: 2
+            row_default_height: 30
+            cols_minimum: {0: 50, 1: 300}
+            size_hint: (None, None)
+            height: self.minimum_height
+            PopupLabelCell:
+                text: 'new name'
+            TextInput:
+                id: new_name
+            PopupLabelCell:
+                text: 'shuffle'
+            CheckBox:
+                id: cb_shuffle
+            PopupLabelCell:
+                text: 'swap Q/A'
+            CheckBox:
+                id: cb_swap
+            PopupLabelCell:
+                text: 'reset'
+            CheckBox:
+                id: cb_reset
+            PopupLabelCell:
+                text: 'apply question info'
+            CheckBox:
+                id: cb_apply_qi
+            PopupLabelCell:
+                text: 'apply answer info'
+            CheckBox:
+                id: cb_apply_ai
+
+
+        Label:
+            id: info_text
+            text_size: self.size
+
+        Label:
+            id: alert
+            color: 1, 0, 0, 1
+            text: ''
+
+        BoxLayout:
+            size_hint_y: .8
+            spacing: 1
+            padding: 1
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Copy"
+                on_release:
+                    root.copy()
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Cancel"
+                on_release:
+                    root.dismiss()
+
 <ExportCardSetPopup>:
     size_hint: None, None
     size: 450, 400

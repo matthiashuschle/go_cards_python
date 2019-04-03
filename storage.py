@@ -1,10 +1,11 @@
-import peewee
-from contextlib import contextmanager
-from kivy.logger import Logger
-from db_models import CardSet, Card, database, MIN_DATE
+import random
+import datetime
 import threading
 from queue import Queue
-import datetime
+from contextlib import contextmanager
+import peewee
+from kivy.logger import Logger
+from db_models import CardSet, Card, database, MIN_DATE  #noqa
 
 DT_FORMAT = '%Y-%m-%d %H:%M:%S'
 CARD_TO_STRING = {
@@ -107,4 +108,39 @@ class Storage:
                 new_card = Card(card_set=card_set, **value_dict)
                 new_card.save()
             self.refresh_data()
+
+    def copy_set_to(self, old_set, new_name, shuffle=False, swap=False, reset=False,
+                    apply_qi=False, apply_ai=False):
+        new_set_probs = {
+            'name': new_name,
+            'description': old_set.description,
+            'left_info': old_set.left_info if not swap else old_set.right_info,
+            'right_info': old_set.right_info if not swap else old_set.left_info
+        }
+        # create cards as value dictionaries
+        cards = []
+        for card in self.cards:
+            if card.card_set != old_set:
+                continue
+            card_dict = card.to_dict()
+            del card_dict['card_id']
+            if apply_qi:
+                card_dict['left_info'] = old_set.left_info
+            if apply_ai:
+                card_dict['right_info'] = old_set.right_info
+            if swap:
+                card_dict['left'], card_dict['right'] = card_dict['right'], card_dict['left']
+                card_dict['left_info'], card_dict['right_info'] = card_dict['right_info'], card_dict['left_info']
+            if reset:
+                del card_dict['hidden_until']
+                del card_dict['last_seen']
+                del card_dict['streak']
+            cards.append(card_dict)
+        if shuffle:
+            random.shuffle(cards)
+        with self.db_access():
+            new_set = CardSet(**new_set_probs)
+            new_set.save()
+        self.add_many_cards(cards, new_set)
+
 

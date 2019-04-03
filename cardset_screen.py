@@ -16,6 +16,39 @@ from kivy.uix.popup import Popup
 from common import set_screen_active, get_screen, CardsetPopup, CardPopup, CARD_TO_STRING
 
 
+class CopyCardSetPopup(Popup):
+
+    def __init__(self, existing_names, **kwargs):
+        super().__init__(**kwargs)
+        self.existing_names = existing_names
+
+    def alert(self, msg):
+        try:
+            self.ids['alert'].text = msg
+        except KeyError:
+            pass
+
+    def copy(self):
+        new_name = self.ids['new_name'].text.strip()
+        new_name = re.sub(r'[\W]', '', new_name)
+        self.ids['new_name'].text = new_name
+        if not len(new_name):
+            self.alert('new has no valid characters!')
+            return
+        if new_name in self.existing_names:
+            self.alert('A set of that name already exists!')
+            return
+        get_screen('cardset').act_on_copy(
+            new_name,
+            shuffle=self.ids['cb_shuffle'].active,
+            swap=self.ids['cb_swap'].active,
+            reset=self.ids['cb_reset'].active,
+            apply_qi=self.ids['cb_apply_qi'].active,
+            apply_ai=self.ids['cb_apply_ai'].active,
+        )
+        self.dismiss()
+
+
 class ExportCardSetPopup(Popup):
 
     def __init__(self, export_dir, **kwargs):
@@ -210,8 +243,20 @@ class CardSetScreen(Screen):
 
         With flags for shuffle, swap, reset, apply left/right info.
         """
-        # ToDo: this
+        CopyCardSetPopup(existing_names=set(x.name for x in self.storage.card_sets)).open()
+
+    def act_on_copy(self, new_name, shuffle=False, swap=False, reset=False,
+                    apply_qi=False, apply_ai=False):
+        self.storage.copy_set_to(self.current_set, new_name, shuffle=shuffle, swap=swap,
+                                 reset=reset, apply_qi=apply_qi, apply_ai=apply_ai)
+        get_screen('manage').rv.reset_data()
 
     def toggle_known(self):
         """ Export Card Set popup """
         # ToDo: this
+
+    def delete(self):
+        # ToDo: this
+        pass
+
+    # ToDo: delete card
