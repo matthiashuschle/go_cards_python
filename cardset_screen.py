@@ -250,6 +250,7 @@ class CardSetScreen(Screen):
         self.storage.copy_set_to(self.current_set, new_name, shuffle=shuffle, swap=swap,
                                  reset=reset, apply_qi=apply_qi, apply_ai=apply_ai)
         get_screen('manage').rv.reset_data()
+        self.set_set_name(new_name)
 
     def toggle_known(self):
         """ Export Card Set popup """
