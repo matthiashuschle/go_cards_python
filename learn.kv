@@ -57,6 +57,11 @@
                     root.save()
             NavbarButton:
                 size_hint: 1, 0.4
+                text: "Delete"
+                on_release:
+                    root.delete()
+            NavbarButton:
+                size_hint: 1, 0.4
                 text: "Cancel"
                 on_release:
                     root.cancel()

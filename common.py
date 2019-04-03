@@ -6,6 +6,22 @@ from kivy.uix.popup import Popup
 from storage import CARD_TO_STRING, CARD_FROM_STRING, CARDSET_TO_STRING, CARDSET_FROM_STRING
 
 
+class DeletePopup(Popup):
+
+    def __init__(self, name, callback=None, **kwargs):
+        super().__init__(**kwargs)
+        self.callback = callback
+        self.ids['info_text'].text = os.linesep.join([
+            'Do you really want to delete',
+            name + '?'
+        ])
+
+    def delete(self):
+        if self.callback is not None:
+            self.callback()
+        self.dismiss()
+
+
 class DBElementPopup(Popup):
 
     id_map = {}
@@ -125,6 +141,9 @@ class CardPopup(DBElementPopup):
             to_string_methods=to_string_methods or CARD_TO_STRING,
             **kwargs
         )
+
+    def delete(self):
+        pass
 #
 #
 # class NewElementPopup(Popup):

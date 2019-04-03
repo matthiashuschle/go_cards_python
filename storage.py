@@ -143,4 +143,12 @@ class Storage:
             new_set.save()
         self.add_many_cards(cards, new_set)
 
+    def delete_set(self, cardset):
+        with self.db_access():
+            cardset.delete_instance(recursive=True)
+            self.refresh_data()
 
+    def delete_card(self, card):
+        with self.db_access():
+            card.delete_instance()
+            self.refresh_data()

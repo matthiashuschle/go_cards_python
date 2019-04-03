@@ -284,6 +284,11 @@
                     root.save()
             NavbarButton:
                 size_hint: 1, 0.4
+                text: "Delete"
+                on_release:
+                    root.delete()
+            NavbarButton:
+                size_hint: 1, 0.4
                 text: "Cancel"
                 on_release:
                     root.cancel()
@@ -341,9 +346,8 @@
                 text: 'Copy'
                 on_press: root.copy_popup()
             NavbarButton:
-                id: btn_hide_known
-                text: 'Hide Known'
-                on_press: root.toggle_known()
+                text: 'Delete'
+                on_press: root.delete_set_popup()
 
         Label:
             size_hint_y: 1

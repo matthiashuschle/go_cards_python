@@ -1,3 +1,31 @@
+<DeletePopup>:
+    size_hint: None, None
+    size: 450, 200
+    title: 'Delete Card Set'
+    title_size: 20
+    auto_dismiss: False
+
+    BoxLayout:
+        orientation: "vertical"
+        Label:
+            id: info_text
+            text_size: self.size
+
+        BoxLayout:
+            size_hint_y: .8
+            spacing: 1
+            padding: 1
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Delete"
+                on_release:
+                    root.delete()
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Cancel"
+                on_release:
+                    root.dismiss()
+
 <NavbarButton@Button>:
     background_normal: ''
     background_color: 0.145, 0.431, 0.369, 1.

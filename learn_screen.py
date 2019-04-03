@@ -4,7 +4,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.logger import Logger
 from kivy.properties import ObjectProperty
 from storage import MIN_DATE, DT_FORMAT
-from common import set_screen_active, get_screen, CardPopup
+from common import set_screen_active, get_screen, CardPopup, DeletePopup
 
 
 class EditCardPopup(CardPopup):
@@ -18,6 +18,13 @@ class EditCardPopup(CardPopup):
             setattr(self.db_object, field, value)
         get_screen('learn').act_on_card_edit()
 
+    def delete(self):
+        DeletePopup(self.db_object.left, callback=self.act_on_delete).open()
+
+    def act_on_delete(self):
+        get_screen('learn').act_on_card_delete(self.db_object)
+        self.dismiss()
+
 
 class LearnScreen(Screen):
 
@@ -28,7 +35,7 @@ class LearnScreen(Screen):
         super().__init__(**kwargs)
         self.storage = storage
         self.card_data = []
-        self.total_cards = None
+        self.total_cards = 0
         Logger.info('in LearnScreen')
 
     def update_cards(self, selected_sets):
@@ -135,6 +142,11 @@ class LearnScreen(Screen):
     def move_current_card_back(self, steps=6):
         self.card_data.insert(min(steps, len(self.card_data)), self.current_card)
         self.card_data = self.card_data[min(len(self.card_data), 1):]
+        self.update_questions()
+
+    def act_on_card_delete(self, card):
+        self.storage.delete_card(card)
+        self.card_data = self.card_data[1:]
         self.update_questions()
 
 

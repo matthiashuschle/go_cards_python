@@ -13,7 +13,9 @@ from kivy.uix.recycleview import RecycleView
 from kivy.properties import BooleanProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
-from common import set_screen_active, get_screen, CardsetPopup, CardPopup, CARD_TO_STRING
+from common import (
+    set_screen_active, get_screen, CardsetPopup, CardPopup,
+    CARD_TO_STRING, DeletePopup)
 
 
 class CopyCardSetPopup(Popup):
@@ -104,6 +106,13 @@ class FullEditCardPopup(CardPopup):
         for field, value in value_dict.items():
             setattr(self.db_object, field, value)
         get_screen('cardset').act_on_card_edit(self.db_object)
+
+    def delete(self):
+        DeletePopup(self.db_object.left, callback=self.delete_callback).open()
+
+    def delete_callback(self):
+        get_screen('cardset').act_on_card_delete(self.db_object)
+        self.dismiss()
 
 
 class CardListLabel(RecycleDataViewBehavior, BoxLayout):
@@ -252,12 +261,17 @@ class CardSetScreen(Screen):
         get_screen('manage').rv.reset_data()
         self.set_set_name(new_name)
 
-    def toggle_known(self):
-        """ Export Card Set popup """
-        # ToDo: this
+    def delete_set_popup(self):
+        DeletePopup(
+            self.current_set.name, callback=self.act_on_delete).open()
 
-    def delete(self):
-        # ToDo: this
-        pass
+    def act_on_delete(self):
+        self.storage.delete_set(self.current_set)
+        get_screen('manage').rv.reset_data()
+        set_screen_active('manage')
 
-    # ToDo: delete card
+    def act_on_card_delete(self, card):
+        self.storage.delete_card(card)
+        self.update_cards()
+
+    # ToDo: show streak in table
