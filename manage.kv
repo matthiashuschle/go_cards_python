@@ -1,3 +1,48 @@
+<MergeCardSetsPopup>:
+    size_hint: None, None
+    size: 450, 200
+    title: 'Merge Card Sets'
+    title_size: 20
+    auto_dismiss: False
+
+    BoxLayout:
+        orientation: "vertical"
+
+        GridLayout:
+            cols: 2
+            row_default_height: 30
+            cols_minimum: {0: 50, 1: 300}
+            size_hint: (None, None)
+            height: self.minimum_height
+            PopupLabelCell:
+                text: 'new name'
+            TextInput:
+                id: new_name
+
+        Label:
+            id: info_text
+            text_size: self.size
+
+        Label:
+            id: alert
+            color: 1, 0, 0, 1
+            text: ''
+
+        BoxLayout:
+            size_hint_y: .8
+            spacing: 1
+            padding: 1
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Merge"
+                on_release:
+                    root.merge()
+            NavbarButton:
+                size_hint: 1, 0.4
+                text: "Cancel"
+                on_release:
+                    root.dismiss()
+
 <ImportCardSetPopup>:
     container: container
     size_hint: None, None

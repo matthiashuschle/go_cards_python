@@ -152,3 +152,18 @@ class Storage:
         with self.db_access():
             card.delete_instance()
             self.refresh_data()
+
+    def merge_sets(self, selected_set_names, set_name):
+        new_set_probs = {'name': set_name}
+        # create cards as value dictionaries
+        cards = []
+        for card in self.cards:
+            if card.card_set.name not in selected_set_names:
+                continue
+            card_dict = card.to_dict()
+            del card_dict['card_id']
+            cards.append(card_dict)
+        with self.db_access():
+            new_set = CardSet(**new_set_probs)
+            new_set.save()
+        self.add_many_cards(cards, new_set)

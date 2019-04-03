@@ -15,6 +15,30 @@ from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from common import get_screen, set_screen_active, PopupLabelCell, CardsetPopup, CARD_FROM_STRING
 
 
+class MergeCardSetsPopup(Popup):
+
+    def merge(self):
+        set_name = self.ids['new_name'].text.strip()[:100]
+        if not len(set_name):
+            self.alert('No name given!')
+            return
+        # sanitize
+        set_name = re.sub(r'[\W]', '', set_name)
+        self.ids['new_name'].text = set_name
+        duplicates = get_screen('manage').check_for_duplicates({set_name})
+        if len(duplicates):
+            self.alert('set already exist:' + os.linesep + ', '.join(duplicates))
+            return
+        get_screen('manage').act_on_merge(set_name)
+        self.dismiss()
+
+    def alert(self, msg):
+        try:
+            self.ids['alert'].text = msg
+        except KeyError:
+            pass
+
+
 class ImportCardSetPopup(Popup):
 
     container = ObjectProperty(None)
@@ -166,9 +190,16 @@ class ManageScreen(Screen):
         self.storage.add_new_set(value_dict)
         self.rv.reset_data()
 
-    def merge(self):
-        # ToDo: this
-        pass
+    def merge_card_sets(self):
+        selected_set_ids = self.rv.get_selected()
+        if not len(selected_set_ids):
+            return
+        MergeCardSetsPopup().open()
+
+    def act_on_merge(self, set_name):
+        selected_set_ids = self.rv.get_selected()
+        self.storage.merge_sets(selected_set_ids, set_name)
+        self.rv.reset_data()
 
     def cardset_import(self):
         ImportCardSetPopup(self.import_dir).open()
