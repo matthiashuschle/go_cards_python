@@ -1,7 +1,7 @@
 <EditCardPopup>:
     container: container
     size_hint: None, None
-    size: 450, 500
+    size: dp(450), dp(500)
     title_size: 20
     auto_dismiss: False
 
@@ -11,8 +11,8 @@
         GridLayout:
             id: container
             cols: 2
-            row_default_height: 30
-            cols_minimum: {0: 50, 1: 300}
+            row_default_height: dp(30)
+            cols_minimum: {0: dp(50), 1: dp(300)}
             # spacing: 10, 10
             # padding: 20, 20
             size_hint: (None, None)

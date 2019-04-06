@@ -28,7 +28,7 @@ from learn_screen import *
 from manage_screen import *
 from cardset_screen import *
 
-Window.size = (480, 768)
+#Window.size = (480, 768)
 
 
 COLORS = {
