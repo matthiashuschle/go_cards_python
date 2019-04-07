@@ -54,13 +54,18 @@
     BoxLayout:
         orientation: "vertical"
 
-        GridLayout:
-            id: container
-            cols: 2
-            row_default_height: dp(30)
-            cols_minimum: {0: dp(75), 1: dp(250)}
-            size_hint: (None, None)
-            height: self.minimum_height
+
+        ScrollView:
+            orientation: 'vertical'
+            do_scroll_x: False
+            size_hint_y: 6
+            GridLayout:
+                id: container
+                cols: 2
+                row_default_height: dp(30)
+                cols_minimum: {0: dp(75), 1: dp(250)}
+                size_hint: (None, None)
+                height: self.minimum_height
 
         Label:
             id: info_text
@@ -202,7 +207,8 @@
                 text: 'Learn'
                 on_press: root.open_learn()
 
-        BoxLayout:
+        ScrollView:
             id: card_set_table
             orientation: 'vertical'
+            do_scroll_x: False
             size_hint_y: 11

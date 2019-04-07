@@ -2,6 +2,7 @@ import os
 import re
 import csv
 from kivy.logger import Logger
+from kivy.metrics import dp, sp
 from kivy.properties import BooleanProperty, ObjectProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors import FocusBehavior
@@ -55,8 +56,9 @@ class ImportCardSetPopup(Popup):
         csvfiles = self.get_existing_files()
         self.file_mapping = {file: 'file_to_%i' % i for i, file in enumerate(csvfiles)}
         for filename in csvfiles:
-            self.container.add_widget(PopupLabelCell(text=filename))
-            text_input = TextInput()
+            self.container.add_widget(PopupLabelCell(text=filename, font_size=sp(8)))
+            set_name = re.sub(r'[\W]', '', filename[:-4])
+            text_input = TextInput(text=set_name, font_size=sp(8))
             self.container.add_widget(text_input)
             self.ids[self.file_mapping[filename]] = text_input
         if not len(csvfiles):
@@ -93,6 +95,7 @@ class ImportCardSetPopup(Popup):
         if len(duplicates):
             self.alert('following sets already exist:' + os.linesep + ', '.join(duplicates))
         try:
+            self.alert('importing...')
             get_screen('manage').act_on_import(to_import)
             self.dismiss()
         except OSError:
