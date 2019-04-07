@@ -103,7 +103,7 @@ class ImportCardSetPopup(Popup):
             return
 
 
-class SelectableRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior,
+class SelectableRecycleBoxLayout(FocusBehavior,
                                  RecycleBoxLayout):
     """ Adds selection and focus behaviour to the view. """
 
@@ -113,7 +113,10 @@ class SelectableLabel(RecycleDataViewBehavior, GridLayout):
     index = None
     selected = BooleanProperty(False)
     selectable = BooleanProperty(True)
-    cols = 3
+    cols = 4
+
+    def on_checkbox_active(self, _, value):
+        self.selected = value
 
     def refresh_view_attrs(self, rv, index, data):
         """ Catch and handle the view changes """
@@ -121,15 +124,10 @@ class SelectableLabel(RecycleDataViewBehavior, GridLayout):
         self.ids['id_label1'].text = data['set_name']
         self.ids['id_label2'].text = str(data['card_count'])
         self.selected = data['active']
+        self.ids['cb_active'].active = data['active']
+        self.ids['cb_active'].bind(active=self.on_checkbox_active)
         return super(SelectableLabel, self).refresh_view_attrs(
             rv, index, data)
-
-    def on_touch_down(self, touch):
-        """ Add selection on touch down """
-        if super(SelectableLabel, self).on_touch_down(touch):
-            return True
-        if self.collide_point(*touch.pos) and self.selectable:
-            return self.parent.select_with_touch(self.index, touch)
 
     def apply_selection(self, rv, index, is_selected):
         """ Respond to the selection of items in the view. """
