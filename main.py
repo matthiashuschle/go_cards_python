@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import os
+from traceback import format_exc
 from kivy.app import App
+from kivy import platform
 from kivy.uix.boxlayout import BoxLayout
 from kivy.lang import Builder
 from kivy.properties import StringProperty, OptionProperty, \
@@ -22,11 +24,13 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.recycleview import RecycleView
 from kivy.logger import Logger
+from plyer import storagepath
 
 import storage
 from learn_screen import *
 from manage_screen import *
 from cardset_screen import *
+from debug_screen import *
 
 #Window.size = (480, 768)
 
@@ -41,17 +45,23 @@ Builder.load_file('common.kv')
 Builder.load_file('manage.kv')
 Builder.load_file('learn.kv')
 Builder.load_file('cardset.kv')
+Builder.load_file('debug.kv')
 
 
 class GoCardsApp(App):
 
     def build(self):
         # Create the screen manager
-        storage_handler = storage.Storage()
         sm = ScreenManager()
         sm.transition = SlideTransition(duration=.2)
-        import_dir, export_dir = self.init_data_folder()
-        print('using folders:', import_dir, export_dir)
+        try:
+            root_dir, import_dir, export_dir = self.init_data_folder()
+        except Exception as exc:
+            sm.add_widget(DebugScreen(format_exc(), name='debug'))
+            return sm
+        storage.set_database_dir(root_dir)
+        storage_handler = storage.Storage()
+        print('using folders:', root_dir, import_dir, export_dir)
         sm.add_widget(ManageScreen(storage_handler, import_dir, name='manage'))
         sm.add_widget(LearnScreen(storage_handler, name='learn'))
         sm.add_widget(CardSetScreen(storage_handler, export_dir, name='cardset'))
@@ -59,11 +69,20 @@ class GoCardsApp(App):
 
     def init_data_folder(self):
         root_folder = self.user_data_dir
+        if platform == 'android':
+            from android.permissions import request_permissions, Permission
+            request_permissions([
+                Permission.READ_EXTERNAL_STORAGE,
+                Permission.WRITE_EXTERNAL_STORAGE
+            ])
+            root_folder = os.path.join(storagepath.get_external_storage_dir(), 'gocards')
         import_dir = os.path.join(root_folder, 'import')
         export_dir = os.path.join(root_folder, 'export')
         os.makedirs(import_dir, exist_ok=True)
         os.makedirs(export_dir, exist_ok=True)
-        return import_dir, export_dir
+        if import_dir is None or not os.path.isdir(import_dir):
+            raise OSError('could not create import/export folders')
+        return root_folder, import_dir, export_dir
 
 
 if __name__ == '__main__':

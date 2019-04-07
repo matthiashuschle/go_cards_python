@@ -1,9 +1,14 @@
 # define database models
+import os
 from datetime import datetime
 import peewee as pw
 
-database = pw.SqliteDatabase("gocards.db")
+database = pw.SqliteDatabase(None)
 MIN_DATE = datetime(1999, 12, 31)
+
+
+def set_database_dir(database_dir):
+    database.init(os.path.join(database_dir, 'gocards_db.sqlite'))
 
 
 class BaseModel(pw.Model):

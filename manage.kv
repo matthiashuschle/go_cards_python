@@ -1,6 +1,6 @@
 <MergeCardSetsPopup>:
     size_hint: None, None
-    size: dp(450), dp(200)
+    size: dp(340), dp(200)
     title: 'Merge Card Sets'
     title_size: 20
     auto_dismiss: False
@@ -11,7 +11,7 @@
         GridLayout:
             cols: 2
             row_default_height: dp(30)
-            cols_minimum: {0: dp(50), 1: dp(300)}
+            cols_minimum: {0: dp(75), 1: dp(250)}
             size_hint: (None, None)
             height: self.minimum_height
             PopupLabelCell:
@@ -46,7 +46,7 @@
 <ImportCardSetPopup>:
     container: container
     size_hint: None, None
-    size: dp(450), dp(400)
+    size: dp(340), dp(400)
     title: 'Import Card Set'
     title_size: 20
     auto_dismiss: False
@@ -58,7 +58,7 @@
             id: container
             cols: 2
             row_default_height: dp(30)
-            cols_minimum: {0: dp(50), 1: dp(300)}
+            cols_minimum: {0: dp(75), 1: dp(250)}
             size_hint: (None, None)
             height: self.minimum_height
 
@@ -89,7 +89,7 @@
 <NewCardsetPopup>:
     container: container
     size_hint: None, None
-    size: dp(450), dp(500)
+    size: dp(340), dp(500)
     title_size: 20
     auto_dismiss: False
 
@@ -100,7 +100,7 @@
             id: container
             cols: 2
             row_default_height: 30
-            cols_minimum: {0: dp(50), 1: dp(300)}
+            cols_minimum: {0: dp(75), 1: dp(250)}
             size_hint: (None, None)
             height: self.minimum_height
             PopupLabelCell:

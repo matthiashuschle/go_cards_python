@@ -1,5 +1,4 @@
 import os
-import datetime
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup

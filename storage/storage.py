@@ -5,7 +5,7 @@ from queue import Queue
 from contextlib import contextmanager
 import peewee
 from kivy.logger import Logger
-from db_models import CardSet, Card, database, MIN_DATE  #noqa
+from .db_models import CardSet, Card, database  #noqa
 
 DT_FORMAT = '%Y-%m-%d %H:%M:%S'
 CARD_TO_STRING = {
