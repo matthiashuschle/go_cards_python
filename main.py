@@ -61,7 +61,7 @@ class GoCardsApp(App):
         except Exception as exc:
             sm.add_widget(DebugScreen(format_exc(), name='debug'))
             return sm
-        setup_logging(root_dir)
+        setup_logging(os.path.join(root_dir, 'debug.log'))
         with log_time('setup storage'):
             storage.set_database_dir(root_dir)
             storage_handler = storage.Storage()
