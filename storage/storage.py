@@ -2,6 +2,7 @@ import random
 import datetime
 import threading
 from queue import Queue
+from collections import OrderedDict
 from contextlib import contextmanager
 import peewee
 from kivy.logger import Logger
@@ -21,11 +22,21 @@ CARDSET_TO_STRING = {}
 CARDSET_FROM_STRING = {}
 
 
+class CardHolder:
+
+    def __init__(self, card, card_set):
+        self.card = card
+        self.card_set = card_set
+
+    def to_dict(self):
+        return self.card.to_dict()
+
+
 class Storage:
 
     def __init__(self):
-        self.card_sets = None
-        self.cards = None
+        self.card_sets = OrderedDict()
+        self.cards = OrderedDict
         self.db_lock = threading.Lock()
         with self.db_access():
             self.create_tables()
@@ -44,10 +55,10 @@ class Storage:
         while True:
             card_id = self.update_card_queue.get()
             if card_id is not None:
-                card = [x for x in self.cards if x.card_id == card_id]
-                if len(card) != 1:
+                try:
+                    card = self.cards[card_id].card
+                except KeyError:
                     continue
-                card = card[0]
                 with self.db_access():
                     card.save()
 
@@ -65,21 +76,25 @@ class Storage:
             test_card.save()
 
     def refresh_data(self):
-        self.card_sets = [
-            x for x in CardSet
-                .select(CardSet, peewee.fn.COUNT(Card.card_id).alias('card_count'))
-                .join(Card, peewee.JOIN.LEFT_OUTER)  # include people without pets.
-                .group_by(CardSet)
-                .order_by(CardSet.name)
-        ]
-        self.cards = [x for x in Card.select(Card)]
-        Logger.info('Loaded %i card sets' % len(self.card_sets))
+        self.card_sets = OrderedDict([
+            (x.name, x) for x in CardSet
+            .select(CardSet, peewee.fn.COUNT(Card.card_id).alias('card_count'))
+            .join(Card, peewee.JOIN.LEFT_OUTER)
+            .group_by(CardSet)
+            .order_by(CardSet.name)
+        ])
+        self.cards = OrderedDict()
+        for card_set in self.card_sets.values():
+            for card in Card.select().where(Card.card_set == card_set):
+                self.cards[card.card_id] = CardHolder(card, card_set)
+        Logger.info('Loaded %i card sets with %i cards' % (len(self.card_sets), len(self.cards)))
 
     def set_sets_active(self, active_sets):
-        for card_set in self.card_sets:
-            if (card_set.name in active_sets) != card_set.active:
-                card_set.active = card_set.name in active_sets
-                card_set.save()
+        with self.db_access():
+            for card_set in self.card_sets.values():
+                if (card_set.name in active_sets) != card_set.active:
+                    card_set.active = card_set.name in active_sets
+                    card_set.save()
 
     def add_new_set(self, value_dict):
         with self.db_access():
@@ -89,6 +104,8 @@ class Storage:
             return new_set
 
     def add_new_card(self, value_dict, card_set):
+        print('add new card')
+        print(card_set)
         with self.db_access():
             new_card = Card(card_set=card_set, **value_dict)
             new_card.save()
@@ -96,11 +113,19 @@ class Storage:
 
     def update_set(self, cardset_id):
         with self.db_access():
-            cardset = [x for x in self.card_sets if x.cardset_id == cardset_id]
-            if len(cardset) != 1:
-                return
-            cardset = cardset[0]
-            cardset.save()
+            # may change a set's name!
+            old_name, cardset = None, None
+            found = False
+            for old_name, cardset in self.card_sets.items():
+                if cardset.cardset_id == cardset_id:
+                    found = True
+                    cardset.save()
+                    break
+            if found and cardset.name != old_name:
+                # rename key in self.card_sets
+                self.card_sets = OrderedDict([
+                    (cardset.name, cardset) for cardset in self.card_sets.values()
+                ])
 
     def add_many_cards(self, value_dicts, card_set):
         with self.db_access():
@@ -119,7 +144,7 @@ class Storage:
         }
         # create cards as value dictionaries
         cards = []
-        for card in self.cards:
+        for card in self.cards.values():
             if card.card_set != old_set:
                 continue
             card_dict = card.to_dict()
@@ -157,7 +182,7 @@ class Storage:
         new_set_probs = {'name': set_name}
         # create cards as value dictionaries
         cards = []
-        for card in self.cards:
+        for card in self.cards.values():
             if card.card_set.name not in selected_set_names:
                 continue
             card_dict = card.to_dict()

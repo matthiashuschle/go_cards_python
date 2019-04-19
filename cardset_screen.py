@@ -193,14 +193,13 @@ class CardSetScreen(Screen):
 
     def set_set_name(self, set_name):
         self.ids['title'].text = set_name
-        set_data = [x for x in self.storage.card_sets if x.name == set_name]
-        if len(set_data) != 1:
+        self.current_set = self.storage.card_sets.get(set_name, None)
+        if self.current_set is None:
             return set_screen_active('manage')
-        self.current_set = set_data[0]
         self.update_cards()
 
     def update_cards(self):
-        self.current_cards = [x for x in self.storage.cards if x.card_set == self.current_set]
+        self.current_cards = [x.card for x in self.storage.cards.values() if x.card_set == self.current_set]
         self._set_cards(self.current_cards)
 
     def _set_cards(self, cards):
@@ -261,7 +260,7 @@ class CardSetScreen(Screen):
 
         With flags for shuffle, swap, reset, apply left/right info.
         """
-        CopyCardSetPopup(existing_names=set(x.name for x in self.storage.card_sets)).open()
+        CopyCardSetPopup(existing_names=set(self.storage.card_sets.keys())).open()
 
     def act_on_copy(self, new_name, shuffle=False, swap=False, reset=False,
                     apply_qi=False, apply_ai=False):

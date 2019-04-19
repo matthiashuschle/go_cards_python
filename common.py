@@ -112,7 +112,7 @@ class CardsetPopup(DBElementPopup):
         )
 
     def validate_input(self, value_dict):
-        existing_names = set(x.name for x in self.storage.card_sets)
+        existing_names = set(self.storage.card_sets.keys())
         if not len(value_dict['name']):
             self.alert('no name given!')
             return False

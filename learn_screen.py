@@ -43,7 +43,7 @@ class LearnScreen(Screen):
         with log_time('learn - set_sets_active'):
             self.storage.set_sets_active(selected_sets)
         with log_time('learn - select cards'):
-            card_data = [x for x in self.storage.cards if x.card_set.name in selected_sets]
+            card_data = [x.card for x in self.storage.cards.values() if x.card_set.name in selected_sets]
         with log_time('learn - prepare cards'):
             self.total_cards = len(card_data)
             now = datetime.datetime.utcnow()

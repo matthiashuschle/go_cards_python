@@ -154,9 +154,9 @@ class CardSetRV(RecycleView):
             'set_name': x.name,
             'card_count': x.card_count,
             'active': x.active
-        } for x in self.storage.card_sets]
+        } for x in self.storage.card_sets.values()]
         SelectableRecycleBoxLayout.selected_nodes = [
-            i for i, card_set in enumerate(self.storage.card_sets) if card_set.active]
+            i for i, card_set in enumerate(self.storage.card_sets.values()) if card_set.active]
 
     def get_selected(self):
         return [self.data[ix]['set_name'] for node, ix in
@@ -209,7 +209,7 @@ class ManageScreen(Screen):
         ImportCardSetPopup(self.import_dir).open()
 
     def check_for_duplicates(self, set_names):
-        existing_names = set(x.name for x in self.storage.card_sets)
+        existing_names = set(self.storage.card_sets.keys())
         overlap = set_names & existing_names
         return overlap
 
