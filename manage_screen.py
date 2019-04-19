@@ -13,6 +13,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from debug import log_time
 from common import get_screen, set_screen_active, PopupLabelCell, CardsetPopup, CARD_FROM_STRING
 
 
@@ -179,8 +180,10 @@ class ManageScreen(Screen):
         self.ids.card_set_table.add_widget(self.rv)
 
     def open_learn(self):
-        selected_set_ids = self.rv.get_selected()
-        get_screen('learn').update_cards(selected_set_ids)
+        with log_time('manage - get selected'):
+            selected_set_ids = self.rv.get_selected()
+        with log_time('manage - update_cards'):
+            get_screen('learn').update_cards(selected_set_ids)
         if len(selected_set_ids):
             set_screen_active('learn')
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+import logging
 from traceback import format_exc
 from kivy.app import App
 from kivy import platform
@@ -26,6 +27,7 @@ from kivy.uix.recycleview import RecycleView
 from kivy.logger import Logger
 from plyer import storagepath
 
+from debug import setup_logging, log_time
 import storage
 from learn_screen import *
 from manage_screen import *
@@ -59,12 +61,17 @@ class GoCardsApp(App):
         except Exception as exc:
             sm.add_widget(DebugScreen(format_exc(), name='debug'))
             return sm
-        storage.set_database_dir(root_dir)
-        storage_handler = storage.Storage()
+        setup_logging(root_dir)
+        with log_time('setup storage'):
+            storage.set_database_dir(root_dir)
+            storage_handler = storage.Storage()
         print('using folders:', root_dir, import_dir, export_dir)
-        sm.add_widget(ManageScreen(storage_handler, import_dir, name='manage'))
-        sm.add_widget(LearnScreen(storage_handler, name='learn'))
-        sm.add_widget(CardSetScreen(storage_handler, export_dir, name='cardset'))
+        with log_time('create widget manage'):
+            sm.add_widget(ManageScreen(storage_handler, import_dir, name='manage'))
+        with log_time('create widget learn'):
+            sm.add_widget(LearnScreen(storage_handler, name='learn'))
+        with log_time('create widget cardset'):
+            sm.add_widget(CardSetScreen(storage_handler, export_dir, name='cardset'))
         return sm
 
     def init_data_folder(self):

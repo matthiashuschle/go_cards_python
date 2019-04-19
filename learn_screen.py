@@ -5,6 +5,7 @@ from kivy.logger import Logger
 from kivy.properties import ObjectProperty
 from storage import MIN_DATE, DT_FORMAT
 from common import set_screen_active, get_screen, CardPopup, DeletePopup
+from debug import log_time
 
 
 class EditCardPopup(CardPopup):
@@ -39,16 +40,20 @@ class LearnScreen(Screen):
         Logger.info('in LearnScreen')
 
     def update_cards(self, selected_sets):
-        self.storage.set_sets_active(selected_sets)
-        card_data = [x for x in self.storage.cards if x.card_set.name in selected_sets]
-        self.total_cards = len(card_data)
-        now = datetime.datetime.utcnow()
-        card_data = [x for x in card_data if x.hidden_until < now]
-        # unseen cards are shown last! Repeat seen cards first for better learning effect on large sets
-        seen = [x for x in card_data if x.hidden_until > MIN_DATE]
-        unseen = [x for x in card_data if x.hidden_until == MIN_DATE]
-        self.card_data = sorted(seen, key=lambda x: x.hidden_until) + unseen
-        self.update_questions()
+        with log_time('learn - set_sets_active'):
+            self.storage.set_sets_active(selected_sets)
+        with log_time('learn - select cards'):
+            card_data = [x for x in self.storage.cards if x.card_set.name in selected_sets]
+        with log_time('learn - prepare cards'):
+            self.total_cards = len(card_data)
+            now = datetime.datetime.utcnow()
+            card_data = [x for x in card_data if x.hidden_until < now]
+            # unseen cards are shown last! Repeat seen cards first for better learning effect on large sets
+            seen = [x for x in card_data if x.hidden_until > MIN_DATE]
+            unseen = [x for x in card_data if x.hidden_until == MIN_DATE]
+            self.card_data = sorted(seen, key=lambda x: x.hidden_until) + unseen
+        with log_time('learn - update questions'):
+            self.update_questions()
 
     @staticmethod
     def _wrap_question(question, info):
