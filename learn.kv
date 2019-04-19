@@ -66,9 +66,42 @@
                 on_release:
                     root.cancel()
 
+<LearnBatchLabel>:
+    orientation: 'horizontal'
+    padding: 0
+    spacing: 1
+    HiddenButton:
+        id: btn_left
+        halign: 'left'
+        valign: 'top'
+        on_press: root.set_correct()
+        size_hint: 1, 1
+        text_size: self.size[0] * .9, self.size[1] * .9
+    HiddenButton:
+        id: btn_right
+        halign: 'left'
+        valign: 'top'
+        on_press: root.reveal()
+        size_hint: 1, 1
+        text_size: self.size[0] * .9, self.size[1] * .9
+
+<LearnBatchRV>:
+    viewclass: 'LearnBatchLabel'
+    RecycleBoxLayout:
+        id: rv_layout
+        orientation: 'vertical'
+        default_size: None, dp(42)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+
 <LearnScreen>:
 
     set_info_label: set_info_label
+    learn_layout: learn_layout
+    layout_single: layout_single
+    layout_batch: layout_batch
+    box_batch_table: box_batch_table
 
     BoxLayout:
         orientation: 'vertical'
@@ -98,38 +131,66 @@
             color: .6, .6, .6, 1.
 
         BoxLayout:
-            id: questions
+            id: learn_layout
             orientation: 'vertical'
-            size_hint_y: 7
-            HiddenButton:
-                id: q_next
-                text: 'foo'
-                color: .6, .6, .6, 1.
-                font_size: 14
-                on_press: root.reveal()
-            HiddenButton:
-                id: q_this
-                text: 'bar'
-                font_size: 20
-                on_press: root.reveal()
-            HiddenButton:
-                id: answer
-                text: 'hidden answer'
-                font_size: 20
-                on_press: root.reveal()
+            size_hint_y: 10
 
-        BoxLayout:
-            orientation: 'vertical'
-            size_hint_y: 3
             BoxLayout:
-                orientation: 'horizontal'
-                spacing: 1
-                padding: 1
-                NavbarButton:
-                    background_color: 0.173, 0.278, 0.439, 1.
-                    text: 'wrong'
-                    on_press: root.wrong_answer()
-                NavbarButton:
-                    background_color: 0.29, 0.569, 0.188, 1.
-                    text: 'correct'
-                    on_press: root.right_answer()
+                id: layout_single
+                orientation: 'vertical'
+
+                BoxLayout:
+                    id: questions
+                    orientation: 'vertical'
+                    size_hint_y: 7
+                    HiddenButton:
+                        id: q_next
+                        text: 'foo'
+                        color: .6, .6, .6, 1.
+                        font_size: 14
+                        on_press: root.reveal()
+                    HiddenButton:
+                        id: q_this
+                        text: 'bar'
+                        font_size: 20
+                        on_press: root.reveal()
+                    HiddenButton:
+                        id: answer
+                        text: 'hidden answer'
+                        font_size: 20
+                        on_press: root.reveal()
+
+                BoxLayout:
+                    orientation: 'vertical'
+                    size_hint_y: 3
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        spacing: 1
+                        padding: 1
+                        NavbarButton:
+                            background_color: 0.173, 0.278, 0.439, 1.
+                            text: 'wrong'
+                            on_press: root.wrong_answer()
+                        NavbarButton:
+                            background_color: 0.29, 0.569, 0.188, 1.
+                            text: 'correct'
+                            on_press: root.right_answer()
+
+            BoxLayout:
+                id: layout_batch
+                orientation: 'vertical'
+                size_hint_y: 10
+
+                BoxLayout:
+                    orientation: 'vertical'
+                    size_hint_y: 0.5
+                    padding: 3
+                    NavbarButton:
+                        text: 'Submit'
+                        on_press: root.submit_batch()
+
+
+                BoxLayout:
+                    id: box_batch_table
+                    orientation: 'vertical'
+                    size_hint_y: 9.5

@@ -3,9 +3,67 @@ import datetime
 from kivy.uix.screenmanager import Screen
 from kivy.logger import Logger
 from kivy.properties import ObjectProperty
+from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.recycleview import RecycleView
 from storage import MIN_DATE, DT_FORMAT
-from common import set_screen_active, get_screen, CardPopup, DeletePopup
+from common import set_screen_active, get_screen, CardPopup, DeletePopup, hide_widget
 from debug import log_time
+
+
+class LearnBatchLabel(RecycleDataViewBehavior, BoxLayout):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.question = None
+        self.answer = None
+        self.card_id = None
+        self.correct = False
+        self.index = None
+
+    def refresh_view_attrs(self, rv, index, data):
+        """ Catch and handle the view changes """
+        # self.index = index
+        self.correct = False
+        self.card_id = data['card_id']
+        self.question = data['question']
+        self.answer = data['answer']
+        self.index = index
+        btn_left = self.ids['btn_left']
+        btn_right = self.ids['btn_right']
+        btn_left.text = self.question
+        btn_right.text = '<reveal!>'
+        self._set_bg_color()
+        return super(LearnBatchLabel, self).refresh_view_attrs(
+            rv, index, data)
+
+    def _set_bg_color(self):
+        color = [0., 0., 0., 1.]
+        if self.index % 2 == 0:
+            color = [0.1, 0.1, 0.1, 1.]
+        if self.correct:
+            color = [0.29, 0.569, 0.188, 1]
+        self.ids['btn_left'].background_color = color
+        self.ids['btn_right'].background_color = color
+
+    def set_correct(self):
+        self.correct = not self.correct
+        self._set_bg_color()
+
+    def reveal(self):
+        self.ids['btn_right'].text = self.answer
+        # self.ids['btn_right'].disabled = True
+
+
+class LearnBatchRV(RecycleView):
+
+    def __init__(self, **kwargs):
+        super(LearnBatchRV, self).__init__(**kwargs)
+        Logger.info('in RV')
+
+    def get_results(self):
+        return {self.data[ix]['card_id']: node.correct for node, ix in
+                self.ids['rv_layout'].view_indices.items()}
 
 
 class EditCardPopup(CardPopup):
@@ -30,13 +88,22 @@ class EditCardPopup(CardPopup):
 class LearnScreen(Screen):
 
     set_info_label = ObjectProperty(None)
+    learn_layout = ObjectProperty(None)
+    layout_single = ObjectProperty(None)
+    layout_batch = ObjectProperty(None)
+    box_batch_table = ObjectProperty(None)
     selected_sets = []
+    BATCH_LEN = 10
 
     def __init__(self, storage, **kwargs):
         super().__init__(**kwargs)
         self.storage = storage
         self.card_data = []
         self.total_cards = 0
+        self.batch_mode = False
+        self.rv = LearnBatchRV()
+        self.box_batch_table.add_widget(self.rv)
+        hide_widget(self.layout_batch, True)
         Logger.info('in LearnScreen')
 
     def update_cards(self, selected_sets):
@@ -153,6 +220,51 @@ class LearnScreen(Screen):
         self.storage.delete_card(card)
         self.card_data = self.card_data[1:]
         self.update_questions()
+
+    def activate_single(self):
+        self.update_questions()
+        hide_widget(self.layout_batch, True)
+        hide_widget(self.layout_single, False)
+
+    def activate_batch(self):
+        self.update_batch_questions()
+        hide_widget(self.layout_single, True)
+        hide_widget(self.layout_batch, False)
+
+    # Batch Mode
+    def switch_mode(self):
+        if self.batch_mode:
+            self.activate_single()
+        else:
+            self.activate_batch()
+        self.batch_mode = not self.batch_mode
+
+    def update_batch_questions(self):
+        if self.current_card is None:
+            self.activate_single()
+            return
+        self.rv.data = [{
+            'card_id': card.card_id,
+            'question': card.left,
+            'answer': card.right
+        } for card in self.card_data[:self.BATCH_LEN]]
+
+    def submit_batch(self):
+        results = self.rv.get_results()
+        seen = set()
+        while len(self.card_data) and self.card_data[0].card_id in results:
+            card_id = self.current_card.card_id
+            if card_id in seen:
+                self.card_data = [x for x in self.card_data
+                                  if x.card_id not in results or not results[x.card_id]]
+                break
+            correct = results[card_id]
+            if correct:
+                self.right_answer()
+            else:
+                self.wrong_answer()
+            seen.add(card_id)
+        self.update_batch_questions()
 
 
 def datetime_cut_ms(dt):
