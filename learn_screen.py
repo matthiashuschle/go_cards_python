@@ -20,11 +20,13 @@ class LearnBatchLabel(RecycleDataViewBehavior, BoxLayout):
         self.card_id = None
         self.correct = False
         self.index = None
+        self.revealed = False
 
     def refresh_view_attrs(self, rv, index, data):
         """ Catch and handle the view changes """
         # self.index = index
         self.correct = False
+        self.revealed = False
         self.card_id = data['card_id']
         self.question = data['question']
         self.answer = data['answer']
@@ -51,7 +53,11 @@ class LearnBatchLabel(RecycleDataViewBehavior, BoxLayout):
         self._set_bg_color()
 
     def reveal(self):
-        self.ids['btn_right'].text = self.answer
+        if not self.revealed:
+            self.ids['btn_right'].text = self.answer
+            self.revealed = True
+        else:
+            self.set_correct()
         # self.ids['btn_right'].disabled = True
 
 

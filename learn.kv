@@ -188,7 +188,12 @@
                     NavbarButton:
                         text: 'Submit'
                         on_press: root.submit_batch()
-
+                BoxLayout:
+                    orientation: 'vertical'
+                    size_hint_y: 0.5
+                    padding: 3
+                    HiddenButton:
+                        text: ''
 
                 BoxLayout:
                     id: box_batch_table
