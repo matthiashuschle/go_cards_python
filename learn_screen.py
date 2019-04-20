@@ -127,6 +127,8 @@ class LearnScreen(Screen):
             self.card_data = sorted(seen, key=lambda x: x.hidden_until) + unseen
         with log_time('learn - update questions'):
             self.update_questions()
+        with log_time('learn - update batch questions'):
+            self.update_batch_questions()
 
     @staticmethod
     def _wrap_question(question, info):
@@ -176,23 +178,29 @@ class LearnScreen(Screen):
             return
         self.ids['answer'].text = self.current_card.right
 
+    def _modify_card_on_wrong(self, card):
+        card.streak = 0
+        self.storage.update_card_queue.put(card.card_id)
+
     def wrong_answer(self):
         if self.current_card is None:
             set_screen_active('manage')
             return
-        self.current_card.streak = 0
-        self.storage.update_card_queue.put(self.current_card.card_id)
+        self._modify_card_on_wrong(self.current_card)
         self.move_current_card_back()
+
+    def _modify_card_on_right(self, card):
+        card.streak += 1
+        card.last_seen = datetime_cut_ms(datetime.datetime.utcnow())
+        card.hidden_until = datetime_cut_ms(
+            datetime.datetime.utcnow() + datetime.timedelta(hours=(12 * 2 ** (card.streak - 1) - 2)))
+        self.storage.update_card_queue.put(card.card_id)
 
     def right_answer(self):
         if self.current_card is None:
             set_screen_active('manage')
             return
-        self.current_card.streak += 1
-        self.current_card.last_seen = datetime_cut_ms(datetime.datetime.utcnow())
-        self.current_card.hidden_until = datetime_cut_ms(
-            datetime.datetime.utcnow() + datetime.timedelta(hours=(12 * 2 ** (self.current_card.streak - 1) - 2)))
-        self.storage.update_card_queue.put(self.current_card.card_id)
+        self._modify_card_on_right(self.current_card)
         self.card_data = self.card_data[min(len(self.card_data), 1):]
         self.update_questions()
 
@@ -241,9 +249,10 @@ class LearnScreen(Screen):
     def switch_mode(self):
         if self.batch_mode:
             self.activate_single()
-        else:
+            self.batch_mode = False
+        elif len(self.card_data):
             self.activate_batch()
-        self.batch_mode = not self.batch_mode
+            self.batch_mode = True
 
     def update_batch_questions(self):
         if self.current_card is None:
@@ -258,18 +267,25 @@ class LearnScreen(Screen):
     def submit_batch(self):
         results = self.rv.get_results()
         seen = set()
+        shelved = []
         while len(self.card_data) and self.card_data[0].card_id in results:
             card_id = self.current_card.card_id
             if card_id in seen:
-                self.card_data = [x for x in self.card_data
-                                  if x.card_id not in results or not results[x.card_id]]
-                break
+                # We arrive here if an early card is moved back.
+                # We want to avoid processing those repeatedly.
+                # So we remove them temporarily and insert them after processing the whole batch.
+                shelved.append(self.current_card)
+                self.card_data = self.card_data[1:]
+                continue
             correct = results[card_id]
             if correct:
                 self.right_answer()
             else:
                 self.wrong_answer()
             seen.add(card_id)
+        if len(shelved):
+            self.card_data = shelved + self.card_data
+            self.update_questions()
         self.update_batch_questions()
 
 

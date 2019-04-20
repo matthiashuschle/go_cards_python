@@ -185,9 +185,14 @@
                     orientation: 'vertical'
                     size_hint_y: 0.5
                     padding: 3
-                    NavbarButton:
-                        text: 'Submit'
-                        on_press: root.submit_batch()
+                    HiddenButton:
+                        text: ''
+
+                BoxLayout:
+                    id: box_batch_table
+                    orientation: 'vertical'
+                    size_hint_y: 8
+
                 BoxLayout:
                     orientation: 'vertical'
                     size_hint_y: 0.5
@@ -196,6 +201,9 @@
                         text: ''
 
                 BoxLayout:
-                    id: box_batch_table
                     orientation: 'vertical'
-                    size_hint_y: 9.5
+                    size_hint_y: 1
+                    padding: 3
+                    NavbarButton:
+                        text: 'Submit'
+                        on_press: root.submit_batch()
