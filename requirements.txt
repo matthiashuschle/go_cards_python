@@ -1,0 +1,4 @@
+kivy
+# kivy-examples
+plyer
+peewee
